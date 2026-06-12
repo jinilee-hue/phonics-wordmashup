@@ -4,6 +4,7 @@ import { cardScheme } from '../data/compounds';
 export const CARD_W = 200;
 export const CARD_H = 268;
 const R = 22;
+const HIT_PAD = 30; // extra tap area beyond visual card edges
 const IMG_H = CARD_H * 0.56;
 const WORD_H = CARD_H - IMG_H;
 
@@ -77,7 +78,7 @@ export class WordCard extends Phaser.GameObjects.Container {
 
     scene.add.existing(this as unknown as Phaser.GameObjects.GameObject);
     this.setDepth(10);
-    this.setSize(CARD_W + 20, CARD_H + 20);
+    this.setSize(CARD_W + HIT_PAD * 2, CARD_H + HIT_PAD * 2);
 
     this.drawCard();
     if (draggable) {
@@ -102,7 +103,7 @@ export class WordCard extends Phaser.GameObjects.Container {
 
   private setupTap() {
     this.setInteractive(
-      new Phaser.Geom.Rectangle(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H),
+      new Phaser.Geom.Rectangle(-CARD_W / 2 - HIT_PAD, -CARD_H / 2 - HIT_PAD, CARD_W + HIT_PAD * 2, CARD_H + HIT_PAD * 2),
       Phaser.Geom.Rectangle.Contains,
     );
     this.on('pointerdown', () => this.emit('cardtap', this));
@@ -114,19 +115,10 @@ export class WordCard extends Phaser.GameObjects.Container {
     g.clear();
     gg.clear();
 
-    // Selection / drag glow — shared between both modes
-    if (this.selected || dragging) {
-      const alpha = this.selected ? 1 : 0.6;
-      gg.lineStyle(4, 0xFFFFFF, alpha);
-      gg.strokeRoundedRect(-CARD_W / 2 - 8, -CARD_H / 2 - 8, CARD_W + 16, CARD_H + 16, R + 6);
-      gg.fillStyle(0xFFFFFF, this.selected ? 0.18 : 0.08);
-      gg.fillRoundedRect(-CARD_W / 2 - 8, -CARD_H / 2 - 8, CARD_W + 16, CARD_H + 16, R + 6);
-    } else {
-      // Subtle outer glow in non-image mode
-      if (!this.imgMode) {
-        gg.fillStyle(this.ac, 0.22);
-        gg.fillRoundedRect(-CARD_W / 2 - 10, -CARD_H / 2 - 10, CARD_W + 20, CARD_H + 20, R + 6);
-      }
+    // No glow or border on selection/drag — size change only (via scale tween)
+    if (!this.selected && !dragging && !this.imgMode) {
+      gg.fillStyle(this.ac, 0.22);
+      gg.fillRoundedRect(-CARD_W / 2 - 10, -CARD_H / 2 - 10, CARD_W + 20, CARD_H + 20, R + 6);
     }
 
     if (this.imgMode) return; // image card body handled by Phaser Image object
@@ -173,7 +165,7 @@ export class WordCard extends Phaser.GameObjects.Container {
 
   private setupDrag(scene: Phaser.Scene) {
     this.setInteractive(
-      new Phaser.Geom.Rectangle(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H),
+      new Phaser.Geom.Rectangle(-CARD_W / 2 - HIT_PAD, -CARD_H / 2 - HIT_PAD, CARD_W + HIT_PAD * 2, CARD_H + HIT_PAD * 2),
       Phaser.Geom.Rectangle.Contains,
     );
     scene.input.setDraggable(this as unknown as Phaser.GameObjects.GameObject);

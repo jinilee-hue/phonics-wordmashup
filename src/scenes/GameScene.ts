@@ -24,7 +24,11 @@ export class GameScene extends Phaser.Scene {
   private queue: CompoundPair[] = [];
   private roundIndex = 0;
   private score = 0;
+  private coins = 0;
+  private gems = 0;
   private scoreText!: Phaser.GameObjects.Text;
+  private coinText!: Phaser.GameObjects.Text;
+  private gemText!: Phaser.GameObjects.Text;
   private roundText!: Phaser.GameObjects.Text;
   private progressFill!: Phaser.GameObjects.Graphics;
   private hudTrackX = 0;
@@ -34,7 +38,6 @@ export class GameScene extends Phaser.Scene {
   private progressRatio = 0;
   private busy = false;
   private burst!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private stepHighlights: Phaser.GameObjects.Container[] = [];
   private settingsPanel?: Phaser.GameObjects.Container;
   private bgmOn = true;
   private sfxOn = true;
@@ -92,6 +95,8 @@ export class GameScene extends Phaser.Scene {
     this.queue = pickRoundPairs(ROUNDS);
     this.roundIndex = 0;
     this.score = 0;
+    this.coins = 0;
+    this.gems  = 0;
     this.busy = false;
 
     // Pointer cursor on hover for all interactive objects
@@ -224,35 +229,32 @@ export class GameScene extends Phaser.Scene {
 
     // ── Currency badges ───────────────────────────────────────────
     // Each badge: left, badge-bg key, icon key, icon center X (Figma), numRight X, plus center X
-    type BadgeCfg = { bL: number; bgKey: string; iconKey: string; iCX: number; numRX: number; plusCX: number; isScore: boolean };
+    type BadgeCfg = { bL: number; bgKey: string; iconKey: string; iCX: number; numRX: number; plusCX: number; kind: 'score' | 'coin' | 'gem' };
     const badges: BadgeCfg[] = [
-      { bL: 688,  bgKey: 'badge_star_main', iconKey: 'icon_star',  iCX: 724.5, numRX: 795,  plusCX: 825,  isScore: true  },
-      { bL: 860,  bgKey: 'badge_coin_main', iconKey: 'icon_money', iCX: 893,   numRX: 967,  plusCX: 997,  isScore: false },
-      { bL: 1032, bgKey: 'badge_coin_main', iconKey: 'icon_gem',   iCX: 1067.5,numRX: 1139, plusCX: 1169, isScore: false },
+      { bL: 688,  bgKey: 'badge_star_main', iconKey: 'icon_star',  iCX: 724.5, numRX: 795,  plusCX: 825,  kind: 'score' },
+      { bL: 860,  bgKey: 'badge_coin_main', iconKey: 'icon_money', iCX: 893,   numRX: 967,  plusCX: 997,  kind: 'coin'  },
+      { bL: 1032, bgKey: 'badge_coin_main', iconKey: 'icon_gem',   iCX: 1067.5,numRX: 1139, plusCX: 1169, kind: 'gem'   },
     ];
     const bW = p(152), bH = q(58);
     const ibH = q(40);
 
     badges.forEach(cfg => {
       const bx = p(cfg.bL), by = q(13);
-      // Shadow + main
-      this.add.image(bx + bW / 2, by + bH / 2 + q(4), 'badge_shadow'  ).setDisplaySize(bW, bH).setDepth(50);
-      this.add.image(bx + bW / 2, by + bH / 2,         cfg.bgKey       ).setDisplaySize(bW, bH).setDepth(51);
-      // Inner dark box  (Figma offset: left+27, top+9, width 110, height 40)
+      this.add.image(bx + bW / 2, by + bH / 2 + q(4), 'badge_shadow').setDisplaySize(bW, bH).setDepth(50);
+      this.add.image(bx + bW / 2, by + bH / 2,         cfg.bgKey    ).setDisplaySize(bW, bH).setDepth(51);
       const ibL = bx + p(27), ibT = by + q(9), ibW = p(110);
       const ibG = this.add.graphics().setDepth(52);
       ibG.fillStyle(0x426295, 1);
       ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(12));
-      // Icon — 10px from left edge of badge, vertically centered
       const iconSz = sz(40);
       this.add.image(bx + sz(10) + iconSz / 2, ibT + ibH / 2, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53);
-      // Score number (right-aligned)
       const numTxt = this.add.text(p(cfg.numRX), q(29), '0', {
         fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(24)}px`,
         color: '#FFFFFF', fontStyle: 'bold',
       }).setOrigin(1, 0).setDepth(53);
-      if (cfg.isScore) this.scoreText = numTxt;
-      // [+] button
+      if (cfg.kind === 'score') this.scoreText = numTxt;
+      if (cfg.kind === 'coin')  this.coinText  = numTxt;
+      if (cfg.kind === 'gem')   this.gemText   = numTxt;
       this.add.image(p(cfg.plusCX), q(43), 'btn_plus').setDisplaySize(sz(36), sz(36)).setDepth(53);
     });
   }
@@ -463,65 +465,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  // ── Step guide ────────────────────────────────────────────────────
-
-  private buildStepGuide() {
-    const { gw: GW, gh: GH } = this;
-    const guideH = Math.round(GH * 0.094);
-    const y0 = GH - guideH - Math.round(GH * 0.065);
-
-    const bg = this.add.graphics().setDepth(40);
-    bg.fillStyle(0x000000, 0.4);
-    bg.fillRoundedRect(20, y0, GW - 40, guideH, 16);
-
-    const steps = [
-      { icon: '✋', en: '1. Drag', ko: '카드를 중앙으로 끌어보세요!' },
-      { icon: '⚡', en: '2. Crash', ko: '충돌! 단어가 합쳐져요!' },
-      { icon: '✨', en: '3. Evolve', ko: '새 단어로 진화!' },
-    ];
-
-    const sW = (GW - 40) / 3;
-    const fs = Math.round(guideH * 0.28);
-    const fsSmall = Math.round(guideH * 0.19);
-
-    steps.forEach((step, i) => {
-      const sx = 20 + sW * i + sW / 2;
-      const sy = y0 + guideH / 2;
-      const cont = this.add.container(sx, sy).setDepth(41);
-
-      const icon = this.add.text(-sW / 2 + 26, 0, step.icon, { fontSize: `${Math.round(guideH * 0.42)}px` }).setOrigin(0, 0.5);
-      const en = this.add.text(-sW / 2 + 64, -guideH * 0.14, step.en, {
-        fontFamily: 'Baloo 2', fontSize: `${fs}px`, color: '#FFFFFF', fontStyle: 'bold',
-      }).setOrigin(0, 0.5);
-      const ko = this.add.text(-sW / 2 + 64, guideH * 0.16, step.ko, {
-        fontFamily: 'Noto Sans KR', fontSize: `${fsSmall}px`, color: '#8899BB',
-      }).setOrigin(0, 0.5);
-
-      cont.add([icon, en, ko]);
-      this.stepHighlights.push(cont);
-
-      if (i < 2) {
-        this.add.text(sx + sW / 2 - 8, sy, '›', {
-          fontFamily: 'Baloo 2', fontSize: '28px', color: '#445577',
-        }).setOrigin(0.5).setDepth(41);
-      }
-    });
-
-    this.highlightStep(0);
-  }
-
-  private highlightStep(idx: number) {
-    this.stepHighlights.forEach((c, i) => {
-      c.setAlpha(i === idx ? 1 : 0.4);
-      this.tweens.add({
-        targets: c,
-        scaleX: i === idx ? 1.04 : 1,
-        scaleY: i === idx ? 1.04 : 1,
-        duration: 200, ease: 'Back.easeOut',
-      });
-    });
-  }
-
   // ── Bottom navigation ─────────────────────────────────────────────
   // Figma: 4 buttons at top:648, each width:162
   // Replay:301  Mic:473  Hint:645  Home:817
@@ -568,7 +511,7 @@ export class GameScene extends Phaser.Scene {
     const replayImgs: Phaser.GameObjects.Image[] = [];
     replayImgs.push(this.add.image(p(301 + 81), navCY, 'btn_replay_bg').setDisplaySize(p(162), q(62)).setDepth(40));
     replayImgs.push(this.add.image(p(325), navCY, 'icon_replay').setDisplaySize(sz(30), sz(30)).setDepth(43));
-    this.add.text(p(355), navCY, 'Replay', txtStyle).setOrigin(0, 0.5).setDepth(43);
+    this.add.text(p(325) + sz(15) + sz(10), navCY, 'Replay', txtStyle).setOrigin(0, 0.5).setDepth(43);
     makeHit(301, 162, () => {
       btnPress(replayImgs);
       this.time.delayedCall(100, () => {
@@ -581,7 +524,7 @@ export class GameScene extends Phaser.Scene {
     const micImgs: Phaser.GameObjects.Image[] = [];
     drawLayered(473, 162, 'nav_green_shadow', 'nav_green_main', 'nav_green_top');
     micImgs.push(this.add.image(p(516), navCY, 'icon_mic').setDisplaySize(sz(24), sz(34)).setDepth(43));
-    this.add.text(p(549), navCY, 'Mic', txtStyle).setOrigin(0, 0.5).setDepth(43);
+    this.add.text(p(516) + sz(12) + sz(10), navCY, 'Mic', txtStyle).setOrigin(0, 0.5).setDepth(43);
     makeHit(473, 162, () => {
       btnPress(micImgs);
       this.startMic();
@@ -591,7 +534,7 @@ export class GameScene extends Phaser.Scene {
     const hintImgs: Phaser.GameObjects.Image[] = [];
     drawLayered(645, 162, 'nav_hint_shadow', 'nav_hint_main', 'nav_hint_top');
     hintImgs.push(this.add.image(p(684), navCY, 'icon_hint').setDisplaySize(sz(28), sz(34)).setDepth(43));
-    this.add.text(p(719), navCY, 'Hint', txtStyle).setOrigin(0, 0.5).setDepth(43);
+    this.add.text(p(684) + sz(14) + sz(10), navCY, 'Hint', txtStyle).setOrigin(0, 0.5).setDepth(43);
     makeHit(645, 162, () => {
       btnPress(hintImgs);
       this.showHint();
@@ -601,7 +544,7 @@ export class GameScene extends Phaser.Scene {
     const homeImgs: Phaser.GameObjects.Image[] = [];
     drawLayered(817, 162, 'nav_home_shadow', 'nav_home_main', 'nav_home_top');
     homeImgs.push(this.add.image(p(846), navCY, 'icon_home').setDisplaySize(sz(30), sz(28)).setDepth(43));
-    this.add.text(p(882), navCY, 'Home', txtStyle).setOrigin(0, 0.5).setDepth(43);
+    this.add.text(p(846) + sz(15) + sz(10), navCY, 'Home', txtStyle).setOrigin(0, 0.5).setDepth(43);
     makeHit(817, 162, () => {
       btnPress(homeImgs);
       this.time.delayedCall(100, () => {
@@ -713,7 +656,7 @@ export class GameScene extends Phaser.Scene {
       { word: distract[3].word2, icon: distract[3].icon2 },
     ].sort(() => Math.random() - 0.5);
 
-    const CARD_SCALE = 0.72;
+    const CARD_SCALE = 1.08;
     const LEFT_KEYS  = ['card_left_1', 'card_left_2', 'card_left_3'];
 
     // Figma-matched staggered positions (Figma canvas: 1280×720)
@@ -951,13 +894,23 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private bumpBadge(txt: Phaser.GameObjects.Text) {
+    this.tweens.add({ targets: txt, scaleX: 1.5, scaleY: 1.5, duration: 160, ease: 'Back.easeOut', yoyo: true });
+  }
+
   private onRoundWin(pair: CompoundPair, resultCont: Phaser.GameObjects.Container) {
     const { cx: CX, cy: CY } = this;
-    // Fill bar by one step on correct answer
     this.animateProgressTo((this.roundIndex + 1) / ROUNDS);
+
     this.score += 10;
+    this.coins += 15;
+    this.gems  += 3;
     this.scoreText.setText(`${this.score}`);
-    this.tweens.add({ targets: this.scoreText, scaleX: 1.5, scaleY: 1.5, duration: 160, ease: 'Back.easeOut', yoyo: true });
+    this.coinText.setText(`${this.coins}`);
+    this.gemText.setText(`${this.gems}`);
+    this.bumpBadge(this.scoreText);
+    this.time.delayedCall(80,  () => this.bumpBadge(this.coinText));
+    this.time.delayedCall(160, () => this.bumpBadge(this.gemText));
 
     const reward = this.add.text(CX + 80, CY - 60, '+10 ⭐', {
       fontFamily: 'Baloo 2', fontSize: '28px', color: '#FFD700', fontStyle: 'bold',
