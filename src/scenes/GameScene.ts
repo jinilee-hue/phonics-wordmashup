@@ -268,11 +268,10 @@ export class GameScene extends Phaser.Scene {
     // Solid fill (fillGradientStyle breaks with fillRoundedRect in Phaser)
     this.progressFill.fillStyle(0x9040c8, 1);
     this.progressFill.fillRoundedRect(this.hudTrackX, this.hudTrackY, fillW, this.hudTrackH, r);
-    // Shine overlay on top half
+    // Shine overlay on top half — use same r as main fill so corners align
     this.progressFill.fillStyle(0xffffff, 0.2);
     const shineH = Math.round(this.hudTrackH / 2);
-    const shineR = Math.min(shineH / 2, fillW / 2);
-    this.progressFill.fillRoundedRect(this.hudTrackX, this.hudTrackY, fillW, shineH, { tl: shineR, tr: shineR, bl: 0, br: 0 });
+    this.progressFill.fillRoundedRect(this.hudTrackX, this.hudTrackY, fillW, shineH, { tl: r, tr: r, bl: 0, br: 0 });
   }
 
   private animateProgressTo(targetRatio: number) {
