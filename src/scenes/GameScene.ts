@@ -55,7 +55,7 @@ export class GameScene extends Phaser.Scene {
     ['base','birth','book','butter','cake','cup','door','eye','fire','foot','hand','key','light','moon','news','note','pan','play','rain','sea','snow','star','sun','tea','tooth','water','week']
       .forEach(w => this.load.image(`card_left_${w}`, `./images/card_left_${w}.png`));
     // Word-specific card images (right)
-    ['bag','ball','bell','board','book','bow','brush','cake','day','end','fall','fish','flake','flower','fly','ground','house','light','melon','place','pot','rise','set','shelf','shell']
+    ['bag','ball','bell','board','book','bow','brush','cake','day','end','fall','fish','flake','flower','fly','ground','house','light','melon','paper','place','pot','rise','set','shelf','shell']
       .forEach(w => this.load.image(`card_right_${w}`, `./images/card_right_${w}.png`));
     // HUD bar
     this.load.svg('hud_bar_main', './images/hud_bar_main.svg', { scale: 2 });
