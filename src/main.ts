@@ -28,17 +28,6 @@ function runIntro(onComplete: () => void) {
   video.playsInline = true;
   video.muted = true;
 
-  // 🔇 mute hint
-  const hint = document.createElement('div');
-  hint.textContent = '🔇';
-  hint.style.cssText = [
-    'position:absolute', 'bottom:24px', 'right:28px',
-    'font-size:clamp(20px,2.5vw,32px)',
-    'color:rgba(255,255,255,0.55)',
-    'pointer-events:none',
-    'transition:opacity 0.4s ease',
-    'animation:mutePulse 2s ease-in-out infinite',
-  ].join(';');
 
   const style = document.createElement('style');
   style.textContent = [
@@ -120,10 +109,9 @@ function runIntro(onComplete: () => void) {
   // Anywhere on overlay → unmute
   overlay.addEventListener('click', () => {
     video.muted = false;
-    hint.style.opacity = '0';
   }, { once: true });
 
-  overlay.append(video, hint, skipBtn);
+  overlay.append(video, skipBtn);
   document.body.appendChild(overlay);
 
   video.play().catch(() => { overlay.remove(); onComplete(); });
