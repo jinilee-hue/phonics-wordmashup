@@ -176,8 +176,7 @@ export class GameScene extends Phaser.Scene {
 
     // ── Back button  (Figma: left:14, top:13, size:62) ───────────
     const bSz = sz(62);
-    this.add.image(p(14) + bSz / 2, q(13) + bSz / 2 + q(4), 'btn_back_shadow').setDisplaySize(bSz, bSz).setDepth(50);
-    this.add.image(p(14) + bSz / 2, q(13) + bSz / 2,         'btn_back_main'  ).setDisplaySize(bSz, bSz).setDepth(51);
+    const backImg = this.add.image(p(14) + bSz / 2, q(13) + bSz / 2, 'btn_back_main').setDisplaySize(bSz, bSz).setDepth(51);
 
     // Book icon  (Figma: left:98, top:16, size:46×56)
     this.add.image(p(98 + 23), q(16 + 28), 'icon_book').setDisplaySize(sz(46), sz(56)).setDepth(53);
@@ -187,6 +186,7 @@ export class GameScene extends Phaser.Scene {
     hitG.fillRect(p(14), q(13), bSz, bSz);
     hitG.setInteractive(new Phaser.Geom.Rectangle(p(14), q(13), bSz, bSz), Phaser.Geom.Rectangle.Contains);
     hitG.on('pointerdown', () => {
+      this.tweens.add({ targets: backImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
     });
