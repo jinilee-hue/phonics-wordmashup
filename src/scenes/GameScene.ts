@@ -656,7 +656,7 @@ export class GameScene extends Phaser.Scene {
       { word: distract[3].word2, icon: distract[3].icon2 },
     ].sort(() => Math.random() - 0.5);
 
-    const CARD_SCALE = 1.08;
+    const CARD_SCALE = 0.972;
     const LEFT_KEYS  = ['card_left_1', 'card_left_2', 'card_left_3'];
 
     // Figma-matched staggered positions (Figma canvas: 1280×720)
