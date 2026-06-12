@@ -51,11 +51,11 @@ export class GameScene extends Phaser.Scene {
     this.load.image('icon_star',  './images/icon_star.png');
     this.load.image('icon_money', './images/icon_money.png');
     this.load.image('icon_gem',   './images/icon_gemstone.png');
-    // Figma card frame images
-    this.load.image('card_left_1', './images/card_left_1.png');
-    this.load.image('card_left_2', './images/card_left_2.png');
-    this.load.image('card_left_3', './images/card_left_3.png');
-    this.load.image('card_right',  './images/card_right.png');
+    // Word-specific card images (left)
+    ['base','butter','cake','foot','light','moon','pan','play','rain','sea','snow','star','sun','water']
+      .forEach(w => this.load.image(`card_left_${w}`, `./images/card_left_${w}.png`));
+    // Word-specific card images (right)
+    this.load.image('card_right_cake', './images/card_right_cake.png');
 
     // Figma SVG assets — scale:2 rasterizes at 2× viewBox size for crisp display at any screen size
     this.load.svg('btn_back_shadow', './images/btn_back_shadow.svg', { scale: 2 });
@@ -657,8 +657,6 @@ export class GameScene extends Phaser.Scene {
     ].sort(() => Math.random() - 0.5);
 
     const CARD_SCALE = 0.972;
-    const LEFT_KEYS  = ['card_left_1', 'card_left_2', 'card_left_3'];
-
     // Figma-matched staggered positions (Figma canvas: 1280×720)
     // Values are card CENTER coordinates
     const pf = (fx: number) => Math.round(fx * GW / 1280);
@@ -666,7 +664,6 @@ export class GameScene extends Phaser.Scene {
 
     const leftPos  = [{ x: 209, y: 198 }, { x: 359, y: 334 }, { x: 153, y: 449 }];
     const rightPos = [{ x: 950, y: 240 }, { x: 1020, y: 435 }, { x: 1139, y: 190 }];
-    // Slight tilt to match Figma visual — left cards lean left, right cards lean right
     const leftAngle  = [-8, -4, -12];
     const rightAngle = [10,  4,   8];
 
@@ -674,7 +671,11 @@ export class GameScene extends Phaser.Scene {
       const targetX  = pf(figX);
       const targetY  = qf(figY);
       const startX   = side === 'left' ? -CARD_W : GW + CARD_W;
-      const bgKey    = side === 'left' ? LEFT_KEYS[slotIdx % 3] : 'card_right';
+      const leftKey  = `card_left_${word}`;
+      const rightKey = `card_right_${word}`;
+      const bgKey    = side === 'left'
+        ? (this.textures.exists(leftKey)  ? leftKey  : undefined)
+        : (this.textures.exists(rightKey) ? rightKey : undefined);
       const card = new WordCard(this, startX, targetY, word, icon, true, bgKey);
       card.setScale(CARD_SCALE);
       card.setAngle(angle);

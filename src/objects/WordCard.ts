@@ -42,24 +42,9 @@ export class WordCard extends Phaser.GameObjects.Container {
     this.gfx     = scene.add.graphics();
 
     if (this.imgMode) {
-      // ── Image-backed card ─────────────────────────────────
+      // ── Image-backed card — image contains all content, no overlay ─
       const bgImg = scene.add.image(0, 2, bgImageKey!).setDisplaySize(CARD_W, CARD_H);
-
-      // Dark top pill so our word text is readable over the baked-in label
-      const wordPill = scene.add.graphics();
-      wordPill.fillStyle(0x000000, 0.52);
-      wordPill.fillRoundedRect(-CARD_W / 2 + 10, -CARD_H / 2 + 8, CARD_W - 20, 38, 12);
-
-      const wordText = scene.add.text(0, -CARD_H / 2 + 27, word.toUpperCase(), {
-        fontFamily: 'Baloo 2', fontSize: '22px', color: '#FFFFFF', fontStyle: 'bold',
-        shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 4, fill: true },
-      }).setOrigin(0.5, 0.5);
-
-      const iconText = scene.add.text(0, CARD_H * 0.08, icon, {
-        fontSize: '64px',
-      }).setOrigin(0.5, 0.5);
-
-      this.add([this.glowGfx, bgImg, wordPill, iconText, wordText]);
+      this.add([this.glowGfx, bgImg]);
     } else {
       // ── Programmatic card ─────────────────────────────────
       const iconText = scene.add.text(0, -CARD_H / 2 + IMG_H * 0.5, icon, {
