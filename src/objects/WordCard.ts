@@ -201,8 +201,8 @@ export class WordCard extends Phaser.GameObjects.Container {
     this.inZone = true;
     this.scene.tweens.add({
       targets: this,
-      x: tx, y: ty, scaleX: 0.88, scaleY: 0.88,
-      duration: 260, ease: 'Back.easeOut',
+      x: tx, y: ty, scaleX: 1.15, scaleY: 1.15,
+      duration: 300, ease: 'Back.easeOut',
     });
   }
 
