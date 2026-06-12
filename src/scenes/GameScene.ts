@@ -512,12 +512,21 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: imgs, scaleX: 0.92, scaleY: 0.92, duration: 80, yoyo: true, ease: 'Back.easeIn' });
     };
 
-    // ── Replay  (Figma left:301) — restart scene ─────────────────
-    // btn_replay_bg.svg includes all layers in one file (shadow+main+top)
+    // Center icon+text pair within button: measures text width after creation
+    const centerInBtn = (btnCX: number, icon: Phaser.GameObjects.Image, iconW: number, label: string) => {
+      const txt = this.add.text(0, navCY, label, txtStyle).setOrigin(0, 0.5).setDepth(43);
+      const gap = sz(10);
+      const totalW = iconW + gap + txt.width;
+      icon.setX(Math.round(btnCX - totalW / 2 + iconW / 2));
+      txt.setX(Math.round(btnCX - totalW / 2 + iconW + gap));
+    };
+
+    // ── Replay  (Figma left:301) ──────────────────────────────────
     const replayImgs: Phaser.GameObjects.Image[] = [];
     replayImgs.push(this.add.image(p(301 + 81), navCY, 'btn_replay_bg').setDisplaySize(p(162), q(62)).setDepth(40));
-    replayImgs.push(this.add.image(p(325), navCY, 'icon_replay').setDisplaySize(sz(30), sz(30)).setDepth(43));
-    this.add.text(p(325) + sz(15) + sz(10), navCY, 'Replay', txtStyle).setOrigin(0, 0.5).setDepth(43);
+    const replayIcon = this.add.image(0, navCY, 'icon_replay').setDisplaySize(sz(30), sz(30)).setDepth(43);
+    replayImgs.push(replayIcon);
+    centerInBtn(p(301 + 81), replayIcon, sz(30), 'Replay');
     makeHit(301, 162, () => {
       btnPress(replayImgs);
       this.time.delayedCall(100, () => {
@@ -526,31 +535,34 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
-    // ── Mic  (Figma left:473) — speech recognition ───────────────
+    // ── Mic  (Figma left:473) ─────────────────────────────────────
     const micImgs: Phaser.GameObjects.Image[] = [];
     drawLayered(473, 162, 'nav_green_shadow', 'nav_green_main', 'nav_green_top');
-    micImgs.push(this.add.image(p(516), navCY, 'icon_mic').setDisplaySize(sz(24), sz(34)).setDepth(43));
-    this.add.text(p(516) + sz(12) + sz(10), navCY, 'Mic', txtStyle).setOrigin(0, 0.5).setDepth(43);
+    const micIcon = this.add.image(0, navCY, 'icon_mic').setDisplaySize(sz(24), sz(34)).setDepth(43);
+    micImgs.push(micIcon);
+    centerInBtn(p(473 + 81), micIcon, sz(24), 'Mic');
     makeHit(473, 162, () => {
       btnPress(micImgs);
       this.startMic();
     });
 
-    // ── Hint  (Figma left:645) — flash cards ─────────────────────
+    // ── Hint  (Figma left:645) ────────────────────────────────────
     const hintImgs: Phaser.GameObjects.Image[] = [];
     drawLayered(645, 162, 'nav_hint_shadow', 'nav_hint_main', 'nav_hint_top');
-    hintImgs.push(this.add.image(p(684), navCY, 'icon_hint').setDisplaySize(sz(28), sz(34)).setDepth(43));
-    this.add.text(p(684) + sz(14) + sz(10), navCY, 'Hint', txtStyle).setOrigin(0, 0.5).setDepth(43);
+    const hintIcon = this.add.image(0, navCY, 'icon_hint').setDisplaySize(sz(28), sz(34)).setDepth(43);
+    hintImgs.push(hintIcon);
+    centerInBtn(p(645 + 81), hintIcon, sz(28), 'Hint');
     makeHit(645, 162, () => {
       btnPress(hintImgs);
       this.showHint();
     });
 
-    // ── Home  (Figma left:817) — reload to intro ─────────────────
+    // ── Home  (Figma left:817) ────────────────────────────────────
     const homeImgs: Phaser.GameObjects.Image[] = [];
     drawLayered(817, 162, 'nav_home_shadow', 'nav_home_main', 'nav_home_top');
-    homeImgs.push(this.add.image(p(846), navCY, 'icon_home').setDisplaySize(sz(30), sz(28)).setDepth(43));
-    this.add.text(p(846) + sz(15) + sz(10), navCY, 'Home', txtStyle).setOrigin(0, 0.5).setDepth(43);
+    const homeIcon = this.add.image(0, navCY, 'icon_home').setDisplaySize(sz(30), sz(28)).setDepth(43);
+    homeImgs.push(homeIcon);
+    centerInBtn(p(817 + 81), homeIcon, sz(30), 'Home');
     makeHit(817, 162, () => {
       btnPress(homeImgs);
       this.time.delayedCall(100, () => {
