@@ -55,7 +55,10 @@ export class GameScene extends Phaser.Scene {
     ['base','birth','book','butter','cake','cup','door','eye','fire','foot','hand','key','light','moon','news','note','pan','play','rain','sea','snow','star','sun','tea','tooth','water','week']
       .forEach(w => this.load.image(`card_left_${w}`, `./images/card_left_${w}.png`));
     // Word-specific card images (right)
-    this.load.image('card_right_cake', './images/card_right_cake.png');
+    ['bag','ball','bow','cake','fall','fish','flower','fly','light','place','shell']
+      .forEach(w => this.load.image(`card_right_${w}`, `./images/card_right_${w}.png`));
+    // HUD assets
+    this.load.image('progress_box', './images/progress_box.png');
 
     // Figma SVG assets — scale:2 rasterizes at 2× viewBox size for crisp display at any screen size
     this.load.svg('btn_back_shadow', './images/btn_back_shadow.svg', { scale: 2 });
@@ -187,50 +190,32 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
     });
 
-    // ── Progress bar pill (programmatic) ─────────────────────────
-    const pillX = p(88), pillY = q(13), pillW = p(241), pillH = q(58);
-    const pillR = sz(16);
-
-    // Drop shadow
-    const pillShadow = this.add.graphics().setDepth(49);
-    pillShadow.fillStyle(0x000000, 0.35);
-    pillShadow.fillRoundedRect(pillX + sz(3), pillY + sz(5), pillW, pillH, pillR);
-
-    // Pill body
-    const pillG = this.add.graphics().setDepth(50);
-    pillG.fillStyle(0x2a1d55, 1);
-    pillG.fillRoundedRect(pillX, pillY, pillW, pillH, pillR);
-
-    // Pill top highlight
-    pillG.fillStyle(0xffffff, 0.07);
-    pillG.fillRoundedRect(pillX + sz(4), pillY + sz(3), pillW - sz(8), pillH * 0.45, { tl: pillR, tr: pillR, bl: 0, br: 0 });
-
-    // Pill border
-    pillG.lineStyle(sz(1.5), 0x7b63b7, 0.5);
-    pillG.strokeRoundedRect(pillX, pillY, pillW, pillH, pillR);
+    // ── Progress bar (Figma design) ───────────────────────────────
+    // Figma: pill x:88 y:13 w:241 h:62 | track x:153 y:42 w:166 h:20
+    const pillW = p(241), pillH = q(62);
+    const pillCX = p(88) + pillW / 2, pillCY = q(13) + pillH / 2;
+    this.add.image(pillCX, pillCY, 'progress_box').setDisplaySize(pillW, pillH).setDepth(50);
 
     // "Compound Book" label
-    this.add.text(pillX + sz(52), pillY + sz(9), 'Compound Book', {
-      fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(14)}px`,
-      color: '#c8b8ff', fontStyle: 'bold',
+    this.add.text(p(164), q(19), 'Compound Book', {
+      fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(16)}px`,
+      color: '#FFFFFF', fontStyle: 'bold',
     }).setDepth(52);
 
-    // Track background
-    const tX = pillX + sz(48), tY = pillY + sz(30), tW = pillW - sz(60), tH = sz(18);
-    const trackG = this.add.graphics().setDepth(52);
-    trackG.fillStyle(0x1a0f3a, 1);
+    // Track: x:153, y:42, w:166, h:20
+    const tX = p(153), tY = q(42), tW = p(166), tH = q(20);
+    const trackG = this.add.graphics().setDepth(51);
+    trackG.fillStyle(0x1a0830, 0.8);
     trackG.fillRoundedRect(tX, tY, tW, tH, tH / 2);
-    trackG.lineStyle(1, 0x5a4a9a, 0.5);
-    trackG.strokeRoundedRect(tX, tY, tW, tH, tH / 2);
 
     this.hudTrackX = tX + 2; this.hudTrackY = tY + 2;
     this.hudTrackW = tW - 4;  this.hudTrackH = tH - 4;
     this.progressFill = this.add.graphics().setDepth(53);
 
-    // Round progress text (right of label)
-    this.roundText = this.add.text(tX + tW - sz(2), tY + tH / 2, `1 / ${ROUNDS}`, {
-      fontFamily: 'Baloo 2', fontSize: `${sz(12)}px`, color: 'rgba(255,255,255,0.8)', fontStyle: 'bold',
-    }).setOrigin(1, 0.5).setDepth(54);
+    // Round text centered on track
+    this.roundText = this.add.text(tX + tW / 2, tY + tH / 2, `1 / ${ROUNDS}`, {
+      fontFamily: 'Baloo 2', fontSize: `${sz(11)}px`, color: 'rgba(255,255,255,0.75)', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(54);
 
     // ── Settings button  (Figma: left:1204, top:13, size:62) ─────
     const sSz = sz(62);
