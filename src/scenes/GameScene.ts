@@ -398,7 +398,7 @@ export class GameScene extends Phaser.Scene {
     this.zoneSpinContainer.add(this.zoneSpinGfx);
     this.drawSpinRing();
 
-    const zoneFontSize = Math.round(this.zoneR * 1.8);
+    const zoneFontSize = Math.round(36 * Math.min(this.gw / 1280, this.gh / 720));
     const zoneText = this.add.text(0, 0, 'GRAVITY\nZONE', {
       fontFamily: 'Baloo 2', fontSize: `${zoneFontSize}px`, color: '#FFFFFF', fontStyle: 'bold',
       align: 'center',
