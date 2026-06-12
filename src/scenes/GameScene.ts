@@ -91,7 +91,7 @@ export class GameScene extends Phaser.Scene {
     this.gh = this.scale.height;
     this.cx = Math.round(this.gw / 2);
     this.cy = Math.round(this.gh * 0.44);
-    this.zoneR   = Math.round(Math.min(this.gw, this.gh) * 0.115);
+    this.zoneR   = Math.round(Math.min(this.gw, this.gh) * 0.15);
     this.snapOff = Math.round(this.zoneR * 0.65);
 
     this.queue = pickRoundPairs(ROUNDS);
@@ -401,25 +401,31 @@ export class GameScene extends Phaser.Scene {
     this.zoneGfx = this.add.graphics().setDepth(6);
     this.drawStaticZone();
 
-    // Spinning container holds both ring graphics and text so they rotate together
+    // Spinning ring container — text is NOT inside so it stays readable
     this.zoneSpinContainer = this.add.container(CX, CY).setDepth(7);
     this.zoneSpinGfx = this.add.graphics();
     this.zoneSpinContainer.add(this.zoneSpinGfx);
     this.drawSpinRing();
 
-    const zoneFontSize = Math.round(48 * Math.min(this.gw / 1280, this.gh / 720));
-    const zoneText = this.add.text(0, 0, 'GRAVITY\nZONE', {
-      fontFamily: 'Baloo 2', fontSize: `${zoneFontSize}px`, color: '#FFFFFF', fontStyle: 'bold',
+    // Static neon text — separate from spinning container
+    const fs = Math.round(56 * Math.min(this.gw / 1280, this.gh / 720));
+    this.add.text(CX, CY - Math.round(fs * 0.58), 'GRAVITY', {
+      fontFamily: 'Baloo 2', fontSize: `${fs}px`, color: '#00E0FF', fontStyle: 'bold',
       align: 'center',
-      shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 8, fill: true },
-    }).setOrigin(0.5);
-    this.zoneSpinContainer.add(zoneText);
+      shadow: { offsetX: 0, offsetY: 0, color: '#00E0FF', blur: 20, fill: true },
+    }).setOrigin(0.5).setDepth(8);
+
+    this.add.text(CX, CY + Math.round(fs * 0.52), 'ZONE', {
+      fontFamily: 'Baloo 2', fontSize: `${fs}px`, color: '#FF2DA0', fontStyle: 'bold',
+      align: 'center',
+      shadow: { offsetX: 0, offsetY: 0, color: '#FF2DA0', blur: 20, fill: true },
+    }).setOrigin(0.5).setDepth(8);
 
     this.zonePulse = this.tweens.add({
       targets: this.zoneGfx,
-      alpha: { from: 0.7, to: 1 },
-      scaleX: { from: 1, to: 1.05 },
-      scaleY: { from: 1, to: 1.05 },
+      alpha: { from: 0.65, to: 1 },
+      scaleX: { from: 1, to: 1.04 },
+      scaleY: { from: 1, to: 1.04 },
       duration: 1400, ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
     });
   }
@@ -427,25 +433,42 @@ export class GameScene extends Phaser.Scene {
   private drawStaticZone() {
     const { cx: CX, cy: CY, zoneR: ZONE_R } = this;
     const g = this.zoneGfx;
+    const PINK = 0xFF2DA0;
+    const CYAN = 0x00E0FF;
     g.clear();
 
-    [ZONE_R + 50, ZONE_R + 28].forEach((r, i) => {
-      g.lineStyle(1.5, 0x74C0E8, [0.1, 0.22][i]);
-      g.strokeCircle(CX, CY, r);
+    // Outer halo glow rings (cyan)
+    [[ZONE_R + 54, 0.06], [ZONE_R + 34, 0.11], [ZONE_R + 18, 0.18]].forEach(([r, a]) => {
+      g.lineStyle(2, CYAN, a as number);
+      g.strokeCircle(CX, CY, r as number);
     });
 
-    g.lineStyle(4, 0x74C0E8, 0.65);
-    g.strokeCircle(CX, CY, ZONE_R);
-
-    g.fillStyle(0x74C0E8, 0.07);
+    // Inner area soft fill
+    g.fillStyle(PINK, 0.05);
     g.fillCircle(CX, CY, ZONE_R);
+    g.fillStyle(CYAN, 0.04);
+    g.fillCircle(CX, CY, ZONE_R - 9);
 
+    // Neon pink outer ring (layered for glow)
+    [[14, 0.07], [9, 0.16], [5, 0.42], [2.5, 0.92], [1, 1]].forEach(([w, a]) => {
+      g.lineStyle(w as number, PINK, a as number);
+      g.strokeCircle(CX, CY, ZONE_R);
+    });
+
+    // Neon cyan inner ring (layered for glow)
+    [[12, 0.07], [7, 0.18], [3.5, 0.48], [1.5, 0.9]].forEach(([w, a]) => {
+      g.lineStyle(w as number, CYAN, a as number);
+      g.strokeCircle(CX, CY, ZONE_R - 9);
+    });
+
+    // Radial spokes — alternating pink/cyan
     for (let a = 0; a < 360; a += 45) {
       const rad = Phaser.Math.DegToRad(a);
-      g.lineStyle(1.5, 0x74C0E8, 0.3);
+      const color = a % 90 === 0 ? PINK : CYAN;
+      g.lineStyle(1.5, color, 0.55);
       g.lineBetween(
-        CX + Math.cos(rad) * (ZONE_R * 0.4), CY + Math.sin(rad) * (ZONE_R * 0.4),
-        CX + Math.cos(rad) * ZONE_R, CY + Math.sin(rad) * ZONE_R,
+        CX + Math.cos(rad) * (ZONE_R * 0.42), CY + Math.sin(rad) * (ZONE_R * 0.42),
+        CX + Math.cos(rad) * (ZONE_R - 12),   CY + Math.sin(rad) * (ZONE_R - 12),
       );
     }
   }
@@ -453,24 +476,31 @@ export class GameScene extends Phaser.Scene {
   private drawSpinRing() {
     const { zoneR: ZONE_R } = this;
     const g = this.zoneSpinGfx;
+    const PINK = 0xFF2DA0;
+    const CYAN = 0x00E0FF;
     g.clear();
 
+    // Tick marks — major (pink) / minor (cyan)
     for (let a = 0; a < 360; a += 22.5) {
       const rad = Phaser.Math.DegToRad(a);
-      const inner = ZONE_R + 10;
-      const outer = ZONE_R + 22;
-      g.lineStyle(a % 45 === 0 ? 2.5 : 1, 0x74C0E8, a % 45 === 0 ? 0.7 : 0.3);
+      const isMajor = a % 45 === 0;
+      const color = isMajor ? PINK : CYAN;
+      const inner = ZONE_R + 12;
+      const outer = ZONE_R + (isMajor ? 30 : 22);
+      g.lineStyle(isMajor ? 3 : 1.5, color, isMajor ? 0.95 : 0.55);
       g.lineBetween(
         Math.cos(rad) * inner, Math.sin(rad) * inner,
         Math.cos(rad) * outer, Math.sin(rad) * outer,
       );
     }
 
+    // Outer neon dots — alternating pink/cyan
     for (let a = 0; a < 360; a += 30) {
       const rad = Phaser.Math.DegToRad(a);
-      const r = ZONE_R + 36;
-      g.fillStyle(0x74C0E8, 0.25);
-      g.fillCircle(Math.cos(rad) * r, Math.sin(rad) * r, 2.5);
+      const r = ZONE_R + 42;
+      const color = a % 60 === 0 ? PINK : CYAN;
+      g.fillStyle(color, 0.85);
+      g.fillCircle(Math.cos(rad) * r, Math.sin(rad) * r, 3.5);
     }
   }
 
