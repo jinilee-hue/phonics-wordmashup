@@ -52,7 +52,7 @@ export class GameScene extends Phaser.Scene {
     this.load.image('icon_money', './images/icon_money.png');
     this.load.image('icon_gem',   './images/icon_gemstone.png');
     // Word-specific card images (left)
-    ['base','book','butter','cake','cup','door','eye','fire','foot','hand','key','light','moon','news','note','pan','play','rain','sea','snow','star','sun','tea','tooth','water','week']
+    ['base','birth','book','butter','cake','cup','door','eye','fire','foot','hand','key','light','moon','news','note','pan','play','rain','sea','snow','star','sun','tea','tooth','water','week']
       .forEach(w => this.load.image(`card_left_${w}`, `./images/card_left_${w}.png`));
     // Word-specific card images (right)
     this.load.image('card_right_cake', './images/card_right_cake.png');
