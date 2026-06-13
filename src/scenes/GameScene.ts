@@ -985,6 +985,8 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(200, 255, 255, 255, false);
     this.cameras.main.shake(280, 0.012);
 
+    // Background pink/blue fluorescent lights rising up from the zone
+    this.playRisingLights(CX, CY);
     // Cartoon mashup burst — colourful sunburst rays + fluffy cloud poof
     this.playMashupBurst(CX, CY);
 
@@ -1025,6 +1027,63 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(520, () => {
       this.showResultCard(pair);
     });
+  }
+
+  // ── Rising pink/blue fluorescent lights (background, on combine) ──
+
+  private playRisingLights(cx: number, cy: number) {
+    const PINK = 0xFF2DA0;
+    const CYAN = 0x00E0FF;
+    const span = this.zoneR * 1.15;
+    const baseY = cy + this.zoneR * 0.35;
+
+    // Vertical neon light streaks shooting upward from around the ring
+    const COUNT = 13;
+    for (let i = 0; i < COUNT; i++) {
+      const t = i / (COUNT - 1);
+      const x = cx - span + t * span * 2 + Phaser.Math.Between(-8, 8);
+      const color = i % 2 === 0 ? PINK : CYAN;
+      const w = this.zoneR * Phaser.Math.FloatBetween(0.07, 0.13);
+      const h = this.zoneR * Phaser.Math.FloatBetween(1.8, 2.9);
+      const streak = this.add.image(x, baseY, 'ray')
+        .setOrigin(0.5, 1)          // grows upward from its base
+        .setTint(color)
+        .setDepth(5)                // behind the cards — reads as background
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDisplaySize(w, 1)
+        .setAlpha(0);
+      this.tweens.add({
+        targets: streak, displayHeight: h, alpha: 0.95,
+        y: baseY - this.zoneR * 0.25,
+        duration: 380 + i * 18, ease: 'Cubic.easeOut',
+        onComplete: () => {
+          this.tweens.add({
+            targets: streak, alpha: 0, displayHeight: h * 1.15,
+            y: streak.y - this.zoneR * 0.6,
+            duration: 480, ease: 'Cubic.easeIn',
+            onComplete: () => streak.destroy(),
+          });
+        },
+      });
+    }
+
+    // Glowing sparkles drifting upward through the column
+    const sparks = this.add.particles(0, 0, 'pDot', {
+      x: { min: cx - span, max: cx + span },
+      y: baseY,
+      speedY: { min: -320, max: -140 },
+      speedX: { min: -40, max: 40 },
+      accelerationY: -60,
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 0.9, end: 0 },
+      lifespan: { min: 600, max: 1100 },
+      tint: [PINK, CYAN, 0xFFFFFF],
+      blendMode: 'ADD',
+      quantity: 0,
+      emitting: false,
+    }).setDepth(6);
+    sparks.explode(38);
+    this.time.delayedCall(1300, () => sparks.destroy());
   }
 
   // ── Cartoon mashup burst (sunburst rays + cloud poof) ─────────────

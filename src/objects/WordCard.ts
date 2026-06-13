@@ -4,9 +4,10 @@ import { cardScheme } from '../data/compounds';
 export const CARD_W = 200;
 export const CARD_H = 268;
 const R = 22;
-// Hit area matches the visible card exactly (card art fills the PNG edge-to-edge).
-// 0 = no extra padding, so overlapping neighbour cards don't steal each other's taps.
-const HIT_PAD = 0;
+// Comfortable tap margin around the visible card so it's easy to grab.
+// Hovering a card raises its depth (see setupDrag) so this padding never lets a
+// neighbour steal the tap — whichever card you point at comes to the front.
+const HIT_PAD = 20;
 const IMG_H = CARD_H * 0.56;
 const WORD_H = CARD_H - IMG_H;
 
@@ -156,6 +157,10 @@ export class WordCard extends Phaser.GameObjects.Container {
       Phaser.Geom.Rectangle.Contains,
     );
     scene.input.setDraggable(this as unknown as Phaser.GameObjects.GameObject);
+
+    // Pointed card pops to the front so its padded hit area wins over neighbours
+    this.on('pointerover', () => { if (!this.inZone) this.setDepth(15); });
+    this.on('pointerout',  () => { if (!this.inZone) this.setDepth(10); });
 
     this.on('dragstart', () => {
       this.floatTween?.pause();
