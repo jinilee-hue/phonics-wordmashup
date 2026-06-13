@@ -1408,16 +1408,27 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: txt, scaleX: 1.5, scaleY: 1.5, duration: 160, ease: 'Back.easeOut', yoyo: true });
   }
 
+  // Roll the badge number up in place from `from` to `to`
+  private countUp(txt: Phaser.GameObjects.Text, from: number, to: number) {
+    const o = { v: from };
+    this.tweens.add({
+      targets: o, v: to, duration: 600, ease: 'Cubic.easeOut',
+      onUpdate: () => txt.setText(`${Math.round(o.v)}`),
+      onComplete: () => txt.setText(`${to}`),
+    });
+  }
+
   private onRoundWin(resultCont: Phaser.GameObjects.Container) {
     const { cx: CX, cy: CY } = this;
     this.animateProgressTo((this.roundIndex + 1) / ROUNDS);
 
+    const prevScore = this.score, prevCoins = this.coins, prevGems = this.gems;
     this.score += 10;
     this.coins += 15;
     this.gems  += 3;
-    this.scoreText.setText(`${this.score}`);
-    this.coinText.setText(`${this.coins}`);
-    this.gemText.setText(`${this.gems}`);
+    this.countUp(this.scoreText, prevScore, this.score);
+    this.countUp(this.coinText,  prevCoins, this.coins);
+    this.countUp(this.gemText,   prevGems,  this.gems);
     this.bumpBadge(this.scoreText);
     this.time.delayedCall(80,  () => this.bumpBadge(this.coinText));
     this.time.delayedCall(160, () => this.bumpBadge(this.gemText));
