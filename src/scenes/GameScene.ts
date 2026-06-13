@@ -1453,6 +1453,7 @@ export class GameScene extends Phaser.Scene {
 
   private showFinale() {
     const { gw: GW, gh: GH, cx: CX, cy: CY } = this;
+    const s = Math.min(GW / 1280, GH / 720);
 
     // Dim backdrop — dark purple to match the game's overall tone
     const dim = this.add.graphics().setDepth(70).setAlpha(0);
@@ -1462,27 +1463,24 @@ export class GameScene extends Phaser.Scene {
 
     // ── Open "Compound Book" (purple themed) ──────────────────────
     const bookW = Math.round(GW * 0.66);
-    const bookH = Math.round(GH * 0.62);
-    const bookCY = CY - Math.round(GH * 0.03);
+    const bookH = Math.round(GH * 0.58);
+    const bookCY = CY - Math.round(GH * 0.07);
     const r = Math.round(Math.min(bookW, bookH) * 0.05);
 
     const book = this.add.container(CX, bookCY).setDepth(71).setAlpha(0).setScale(0.82);
 
     const g = this.add.graphics();
-    // drop shadow
     g.fillStyle(0x000000, 0.4);
     g.fillRoundedRect(-bookW / 2 + 8, -bookH / 2 + 14, bookW, bookH, r);
-    // cover (purple)
     g.fillStyle(0x6B49A8, 1);
     g.fillRoundedRect(-bookW / 2, -bookH / 2, bookW, bookH, r);
     g.lineStyle(Math.max(3, Math.round(bookW * 0.006)), 0x3A2168, 1);
     g.strokeRoundedRect(-bookW / 2, -bookH / 2, bookW, bookH, r);
-    // single continuous page spread (no brown gutter strip → pages connect)
     const inset = Math.round(bookW * 0.035);
-    const pageH = bookH - inset * 2;
-    const pageY = -bookH / 2 + inset;
     const pageX = -bookW / 2 + inset;
+    const pageY = -bookH / 2 + inset;
     const pageFullW = bookW - inset * 2;
+    const pageH = bookH - inset * 2;
     g.fillStyle(0xF4EEFF, 1);                       // light lavender paper
     g.fillRoundedRect(pageX, pageY, pageFullW, pageH, Math.round(r * 0.5));
     // soft centre fold so the two halves read as one connected spread
@@ -1491,50 +1489,45 @@ export class GameScene extends Phaser.Scene {
       g.fillStyle(0x3A2168, 0.045 * (1 - k / 6));
       g.fillRect(-w, pageY, w * 2, pageH);
     }
-    g.fillStyle(0x3A2168, 0.14); g.fillRect(-1, pageY, 2, pageH);     // crease line
-    g.fillStyle(0xFFFFFF, 0.5);  g.fillRect(1, pageY, 1, pageH);      // crease highlight
+    g.fillStyle(0x3A2168, 0.14); g.fillRect(-1, pageY, 2, pageH);
+    g.fillStyle(0xFFFFFF, 0.5);  g.fillRect(1, pageY, 1, pageH);
     book.add(g);
 
-    // Title ribbon at the top of the book (purple accent)
-    const ribbonW = Math.round(bookW * 0.5);
-    const ribbonH = Math.round(bookH * 0.13);
-    const rib = this.add.graphics();
-    rib.fillStyle(0x8A43D6, 1);
-    rib.fillRoundedRect(-ribbonW / 2, -bookH / 2 - ribbonH * 0.35, ribbonW, ribbonH, ribbonH / 2);
-    rib.fillStyle(0x6B2EAE, 1);
-    rib.fillRoundedRect(-ribbonW / 2, -bookH / 2 - ribbonH * 0.35 + ribbonH * 0.6, ribbonW, ribbonH * 0.4, { tl: 0, tr: 0, bl: ribbonH / 2, br: ribbonH / 2 });
-    const title = this.add.text(0, -bookH / 2 - ribbonH * 0.35 + ribbonH / 2, 'Compound Book', {
-      fontFamily: '"Baloo 2"', fontSize: `${Math.round(ribbonH * 0.5)}px`,
-      color: '#FFFFFF', fontStyle: 'bold',
-      shadow: { offsetX: 0, offsetY: 2, color: 'rgba(0,0,0,0.35)', blur: 2, fill: true },
-    }).setOrigin(0.5);
-    book.add([rib, title]);
+    // ── Title at the book's top-left: game book icon + "Compound Book" ──
+    const pad = Math.round(bookW * 0.025);
+    const titleH = Math.round(bookH * 0.135);
+    const titleY = pageY + pad + titleH * 0.4;
+    const ibH = Math.round(titleH * 0.62);
+    const ibW = Math.round(ibH * 46 / 56);
+    const bookIcon = this.add.image(pageX + pad + ibW / 2, titleY, 'icon_book').setDisplaySize(ibW, ibH);
+    const title = this.add.text(pageX + pad + ibW + Math.round(s * 10), titleY, 'Compound Book', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.5)}px`,
+      color: '#5A2E94', fontStyle: 'bold',
+    }).setOrigin(0, 0.5);
+    book.add([bookIcon, title]);
 
-    // ── Card grid (3 × 2) that fills in one by one ────────────────
+    const contentTop = pageY + titleH + Math.round(bookH * 0.02);
+    const contentBottom = pageY + pageH - pad;
+    const centerGap = Math.round(bookW * 0.02);
+
+    // ── LEFT page: this run's collected word cards (2 × 3) ──────────
     const made = this.queue.slice(0, ROUNDS).map(p => p.result);
-    const cols = 3, rows = 2;
-    const gridLeft = -bookW / 2 + bookW * 0.085;
-    const gridRight = bookW / 2 - bookW * 0.085;
-    const gridTop = -bookH / 2 + bookH * 0.20;
-    const gridBottom = bookH / 2 - bookH * 0.07;
-    const cellW = (gridRight - gridLeft) / cols;
-    const cellH = (gridBottom - gridTop) / rows;
-    const cardH = Math.min(cellH * 0.88, (cellW * 0.84) * 1.21);
+    const lCols = 2, lRows = 3;
+    const gL = pageX + pad, gR = -centerGap - pad;
+    const cW = (gR - gL) / lCols, cH = (contentBottom - contentTop) / lRows;
+    const cardH = Math.min(cH * 0.9, cW * 0.84 * 1.21);
     const cardW = cardH / 1.21;
-
     const slots = this.add.graphics();
     book.add(slots);
 
     made.forEach((result, i) => {
-      const col = i % cols, row = Math.floor(i / cols);
-      const lx = gridLeft + cellW * (col + 0.5);
-      const ly = gridTop + cellH * (row + 0.5);
-
-      // empty slot outline on the page (purple tint)
+      const col = i % lCols, row = Math.floor(i / lCols);
+      const lx = gL + cW * (col + 0.5);
+      const ly = contentTop + cH * (row + 0.5);
       slots.fillStyle(0x6B49A8, 0.08);
-      slots.fillRoundedRect(lx - cardW / 2 - 4, ly - cardH / 2 - 4, cardW + 8, cardH + 8, 10);
+      slots.fillRoundedRect(lx - cardW / 2 - 4, ly - cardH / 2 - 4, cardW + 8, cardH + 8, 9);
       slots.lineStyle(1.5, 0x6B49A8, 0.18);
-      slots.strokeRoundedRect(lx - cardW / 2 - 4, ly - cardH / 2 - 4, cardW + 8, cardH + 8, 10);
+      slots.strokeRoundedRect(lx - cardW / 2 - 4, ly - cardH / 2 - 4, cardW + 8, cardH + 8, 9);
 
       const key = `card_${result}`;
       let obj: Phaser.GameObjects.GameObject & { setScale: (x: number, y?: number) => unknown; setAlpha: (a: number) => unknown };
@@ -1557,15 +1550,79 @@ export class GameScene extends Phaser.Scene {
       }
       book.add(obj as unknown as Phaser.GameObjects.GameObject);
       obj.setScale(0); obj.setAlpha(0);
-
       this.tweens.add({
         targets: obj, scaleX: tsx, scaleY: tsy, alpha: 1,
-        duration: 360, ease: 'Back.easeOut', delay: 360 + i * 170,
-        onComplete: () => {
-          this.burst.setPosition(CX + lx, bookCY + ly);
-          this.burst.explode(14);
-        },
+        duration: 340, ease: 'Back.easeOut', delay: 360 + i * 140,
+        onComplete: () => { this.burst.setPosition(CX + lx, bookCY + ly); this.burst.explode(10); },
       });
+    });
+
+    // ── RIGHT page: overall collection progress (persisted) ─────────
+    const TOTAL = COMPOUND_PAIRS.length;
+    let prevList: string[] = [];
+    try { prevList = JSON.parse(localStorage.getItem('cb_collected') || '[]'); } catch { /* ignore */ }
+    const validResults = new Set(COMPOUND_PAIRS.map(p => p.result));
+    const prevSet = new Set(prevList.filter(w => validResults.has(w)));
+    const set = new Set(prevSet);
+    made.forEach(w => set.add(w));
+    try { localStorage.setItem('cb_collected', JSON.stringify([...set])); } catch { /* ignore */ }
+    const prevCount = Math.min(prevSet.size, TOTAL);
+    const collected = Math.min(set.size, TOTAL);
+
+    const rL = centerGap + pad, rR = pageX + pageFullW - pad;
+    const rCX = (rL + rR) / 2, rW = rR - rL;
+
+    const heading = this.add.text(rCX, contentTop + bookH * 0.02, 'Collection', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.07)}px`,
+      color: '#5A2E94', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    book.add(heading);
+
+    const countText = this.add.text(rCX, contentTop + bookH * 0.14, `${prevCount} / ${TOTAL}`, {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.11)}px`,
+      color: '#8A43D6', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    book.add(countText);
+
+    // progress bar
+    const barW = rW * 0.86, barH = Math.round(bookH * 0.035);
+    const barX = rCX - barW / 2, barY = contentTop + bookH * 0.22;
+    const barBg = this.add.graphics(); book.add(barBg);
+    barBg.fillStyle(0x6B49A8, 0.22); barBg.fillRoundedRect(barX, barY, barW, barH, barH / 2);
+    const barFill = this.add.graphics(); book.add(barFill);
+
+    // 30-word collection dot grid (6 × 5) — filled = collected
+    const dCols = 6, dRows = 5;
+    const dTop = contentTop + bookH * 0.30;
+    const dW = rW / dCols, dH = (contentBottom - dTop) / dRows;
+    const dotR = Math.min(dW, dH) * 0.3;
+    const dotsG = this.add.graphics(); book.add(dotsG);
+    COMPOUND_PAIRS.forEach((p, i) => {
+      const col = i % dCols, row = Math.floor(i / dCols);
+      const dx = rL + dW * (col + 0.5);
+      const dy = dTop + dH * (row + 0.5);
+      if (set.has(p.result)) {
+        dotsG.fillStyle(0x8A43D6, 1); dotsG.fillCircle(dx, dy, dotR);
+        dotsG.fillStyle(0xFFFFFF, 0.5); dotsG.fillCircle(dx - dotR * 0.3, dy - dotR * 0.3, dotR * 0.32);
+      } else {
+        dotsG.fillStyle(0x6B49A8, 0.14); dotsG.fillCircle(dx, dy, dotR);
+        dotsG.lineStyle(1.5, 0x6B49A8, 0.3); dotsG.strokeCircle(dx, dy, dotR);
+      }
+    });
+
+    // animate count + bar fill up to the new total
+    const prog = { v: prevCount };
+    const drawBar = () => {
+      barFill.clear();
+      const fw = Math.max(0, Math.round(barW * (prog.v / TOTAL)));
+      if (fw > 2) { barFill.fillStyle(0xC9A0FF, 1); barFill.fillRoundedRect(barX, barY, fw, barH, barH / 2); }
+    };
+    drawBar();
+    this.tweens.add({
+      targets: prog, v: collected, duration: 800, ease: 'Cubic.easeOut',
+      delay: 360 + ROUNDS * 140,
+      onUpdate: () => { drawBar(); countText.setText(`${Math.round(prog.v)} / ${TOTAL}`); },
+      onComplete: () => { countText.setText(`${collected} / ${TOTAL}`); },
     });
 
     // Book entrance
@@ -1580,10 +1637,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     // ── Play Again button — same design as the in-game Replay button ──
-    const s = Math.min(GW / 1280, GH / 720);
-    const bW = Math.round(s * 162 * 1.5);          // a touch larger than the nav button
+    const bW = Math.round(s * 162 * 1.5);
     const bH = Math.round(bW * 62 / 162);
-    const bCY = bookCY + bookH / 2 + Math.round(GH * 0.07);
+    const bCY = (bookCY + bookH / 2) + Math.round(GH * 0.09) + bH / 2;   // wider gap above the button
     const iconSz = Math.round(bH * 0.46);
 
     const btnBg = this.add.image(CX, bCY, 'btn_replay_bg').setDisplaySize(bW, bH).setDepth(72).setAlpha(0);
@@ -1593,15 +1649,13 @@ export class GameScene extends Phaser.Scene {
       color: '#FFFFFF', fontStyle: 'bold',
       shadow: { offsetX: 0, offsetY: Math.round(s * 2), color: 'rgba(0,0,0,0.25)', blur: 2, fill: true },
     }).setOrigin(0, 0.5).setDepth(73).setAlpha(0);
-    // centre icon + text together within the button
     const gap = Math.round(s * 10);
     const totalW = iconSz + gap + btnTxt.width;
     btnIcon.setX(Math.round(CX - totalW / 2 + iconSz / 2));
     btnTxt.setX(Math.round(CX - totalW / 2 + iconSz + gap));
 
-    const btnParts: Phaser.GameObjects.GameObject[] = [btnBg, btnIcon, btnTxt];
-    const btnDelay = 360 + ROUNDS * 170 + 200;
-    this.tweens.add({ targets: btnParts, alpha: 1, duration: 300, delay: btnDelay });
+    const btnDelay = 360 + ROUNDS * 140 + 300;
+    this.tweens.add({ targets: [btnBg, btnIcon, btnTxt], alpha: 1, duration: 300, delay: btnDelay });
 
     const hit = this.add.graphics().setDepth(74).setAlpha(0.001);
     hit.fillRect(CX - bW / 2, bCY - bH / 2, bW, bH);
