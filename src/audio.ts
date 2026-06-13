@@ -99,6 +99,17 @@ class GameAudio {
     freqs.forEach((f, i) => this.soft(f, t + i * 0.035, 0.18, 0.11, 'triangle', this.master!));
     this.soft(659.25, t, 0.10, 0.06, 'sine', this.master); // soft low body
   }
+
+  /** Gentle descending two-tone — played on a wrong match (kid-friendly, not harsh). */
+  playWrong() {
+    if (!this.sfxOn) return;
+    this.ensure();
+    if (!this.ctx || !this.master) return;
+    if (this.ctx.state === 'suspended') void this.ctx.resume();
+    const t = this.ctx.currentTime;
+    this.soft(311.13, t,        0.16, 0.12, 'triangle', this.master); // Eb4
+    this.soft(233.08, t + 0.13, 0.24, 0.12, 'triangle', this.master); // Bb3 (down)
+  }
 }
 
 export const gameAudio = new GameAudio();

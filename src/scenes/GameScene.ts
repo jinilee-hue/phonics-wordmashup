@@ -988,6 +988,7 @@ export class GameScene extends Phaser.Scene {
   private onWrongMatch() {
     this.cameras.main.flash(180, 255, 60, 60, false);
     this.cameras.main.shake(260, 0.009);
+    gameAudio.playWrong();   // failure SFX
 
     const wrongText = this.add.text(this.cx, this.cy, '✗', {
       fontFamily: 'Baloo 2', fontSize: '80px', color: '#FF4444', fontStyle: 'bold',
