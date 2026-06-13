@@ -1271,8 +1271,6 @@ export class GameScene extends Phaser.Scene {
   // ── Card-reveal flair: glow flare + sunburst spokes + sparkle ring ──
 
   private playCardReveal(rx: number, ry: number, CRW: number, CRH: number) {
-    const GOLD = 0xFFCB45;
-
     // Soft warm halo behind the card (normal blend so it reads on the bright scene)
     const glow = this.add.image(rx, ry, 'softGlow')
       .setTint(0xFFE9A0)
@@ -1297,12 +1295,12 @@ export class GameScene extends Phaser.Scene {
       const ray = this.add.image(0, 0, 'ray')
         .setOrigin(0.5, 1)
         .setAngle((i / SPOKES) * 360)
-        .setTint(GOLD)
+        .setTint(0xFFFFFF)
         .setDisplaySize(CRW * (long ? 0.055 : 0.035), CRH * (long ? 1.4 : 1.12));
       spokes.add(ray);
     }
     this.tweens.add({
-      targets: spokes, alpha: 0.8, scaleX: 1.12, scaleY: 1.12,
+      targets: spokes, alpha: 0.45, scaleX: 1.12, scaleY: 1.12,   // translucent white
       duration: 300, ease: 'Cubic.easeOut',
       onComplete: () => this.tweens.add({
         targets: spokes, alpha: 0, scaleX: 1.3, scaleY: 1.3,
@@ -1310,7 +1308,8 @@ export class GameScene extends Phaser.Scene {
         onComplete: () => spokes.destroy(),
       }),
     });
-    this.tweens.add({ targets: spokes, rotation: 0.45, duration: 1000, ease: 'Sine.easeOut' });
+    // Spin while it appears
+    this.tweens.add({ targets: spokes, rotation: 0.9, duration: 940, ease: 'Cubic.easeOut' });
 
     // Sparkle ring — bright twinkles popping around the card edge
     const SPARKS = 18;
