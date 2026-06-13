@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
+import { gameAudio } from './audio';
 
 runIntro(() => {
   new Phaser.Game({
@@ -77,6 +78,7 @@ function runIntro(onComplete: () => void) {
 
   skipBtn.addEventListener('click', (e) => {
     e.stopPropagation();
+    gameAudio.unlock();   // continue the intro music into the game as BGM
     video.pause();
     overlay.style.transition = 'opacity 0.4s ease';
     overlay.style.opacity = '0';
