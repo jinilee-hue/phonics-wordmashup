@@ -1517,7 +1517,7 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     book.add([bookIcon, title]);
 
-    const contentTop = pageY + titleH + Math.round(bookH * 0.02);
+    const contentTop = pageY + titleH + Math.round(bookH * 0.075);
     const contentBottom = pageY + pageH - pad;
     const centerGap = Math.round(bookW * 0.02);
 
