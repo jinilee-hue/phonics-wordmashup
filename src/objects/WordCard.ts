@@ -4,7 +4,9 @@ import { cardScheme } from '../data/compounds';
 export const CARD_W = 200;
 export const CARD_H = 268;
 const R = 22;
-const HIT_PAD = 30; // extra tap area beyond visual card edges
+// Hit area matches the visible card exactly (card art fills the PNG edge-to-edge).
+// 0 = no extra padding, so overlapping neighbour cards don't steal each other's taps.
+const HIT_PAD = 0;
 const IMG_H = CARD_H * 0.56;
 const WORD_H = CARD_H - IMG_H;
 

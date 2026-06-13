@@ -873,8 +873,6 @@ export class GameScene extends Phaser.Scene {
     rightData.forEach((d, i) => this.rightCards.push(
       makeCard(rightPos[i].x, rightPos[i].y, rightAngle[i], i, d.word, d.icon, 'right')
     ));
-
-    this.showBanner(`${pair.word1.toUpperCase()} + ${pair.word2.toUpperCase()} = ?`);
   }
 
   // ── Drag event wiring ─────────────────────────────────────────────
@@ -1072,7 +1070,7 @@ export class GameScene extends Phaser.Scene {
       onComplete: () => {
         this.burst.setPosition(rx, ry);
         this.burst.explode(40);
-        this.onRoundWin(pair, cont);
+        this.onRoundWin(cont);
       },
     });
 
@@ -1088,7 +1086,7 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: txt, scaleX: 1.5, scaleY: 1.5, duration: 160, ease: 'Back.easeOut', yoyo: true });
   }
 
-  private onRoundWin(pair: CompoundPair, resultCont: Phaser.GameObjects.Container) {
+  private onRoundWin(resultCont: Phaser.GameObjects.Container) {
     const { cx: CX, cy: CY } = this;
     this.animateProgressTo((this.roundIndex + 1) / ROUNDS);
 
@@ -1112,8 +1110,6 @@ export class GameScene extends Phaser.Scene {
         this.tweens.add({ targets: reward, alpha: 0, duration: 400, delay: 400, onComplete: () => reward.destroy() });
       },
     });
-
-    this.showBanner(`✨ ${pair.result.toUpperCase()}!`);
 
     this.time.delayedCall(2400, () => {
       this.tweens.add({
@@ -1194,33 +1190,4 @@ export class GameScene extends Phaser.Scene {
     btnG.on('pointerout', () => { btnG.clear(); btnG.fillStyle(0xFF6B35, 1); btnG.fillRoundedRect(bx, by, bw, bh, bh / 2); });
   }
 
-  // ── Banner message ────────────────────────────────────────────────
-
-  private bannerCont?: Phaser.GameObjects.Container;
-  private bannerTimer?: Phaser.Time.TimerEvent;
-
-  private showBanner(msg: string) {
-    const { cx: CX, gh: GH } = this;
-    this.bannerCont?.destroy();
-    this.bannerTimer?.remove(false);
-
-    const by = GH - Math.round(GH * 0.21);
-    const c = this.add.container(CX, by + 10).setDepth(48).setAlpha(0);
-    const tw = Math.min(msg.length * 14 + 60, this.gw * 0.6);
-    const bg = this.add.graphics();
-    bg.fillStyle(0x000000, 0.55);
-    bg.fillRoundedRect(-tw / 2, -26, tw, 52, 26);
-
-    const txt = this.add.text(0, 0, msg, {
-      fontFamily: 'Baloo 2', fontSize: '26px', color: '#FFFFFF', fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    c.add([bg, txt]);
-    this.bannerCont = c;
-
-    this.tweens.add({ targets: c, y: by, alpha: 1, duration: 280, ease: 'Back.easeOut' });
-    this.bannerTimer = this.time.delayedCall(2200, () => {
-      this.tweens.add({ targets: c, alpha: 0, duration: 240, onComplete: () => c.destroy() });
-    });
-  }
 }
