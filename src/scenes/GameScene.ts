@@ -161,6 +161,28 @@ export class GameScene extends Phaser.Scene {
     pt.generateTexture('pDot', 12, 12);
     pt.destroy();
 
+    // ── 'ray' — a white rounded capsule, tinted per-instance for the sunburst ──
+    if (!this.textures.exists('ray')) {
+      const rg = this.make.graphics({ x: 0, y: 0 }, false);
+      rg.fillStyle(0xffffff, 1);
+      rg.fillRoundedRect(0, 0, 28, 180, 14);
+      rg.generateTexture('ray', 28, 180);
+      rg.destroy();
+    }
+
+    // ── 'cloudPuff' — a fluffy white cloud blob (cluster of soft circles) ──
+    if (!this.textures.exists('cloudPuff')) {
+      const cg = this.make.graphics({ x: 0, y: 0 }, false);
+      const puffs: [number, number, number][] = [
+        [58, 78, 34], [94, 68, 40], [134, 80, 36],
+        [76, 104, 38], [118, 106, 34], [98, 92, 46],
+      ];
+      cg.fillStyle(0xffffff, 0.35); puffs.forEach(([x, y, r]) => cg.fillCircle(x, y, r + 6));
+      cg.fillStyle(0xffffff, 1);    puffs.forEach(([x, y, r]) => cg.fillCircle(x, y, r));
+      cg.generateTexture('cloudPuff', 192, 184);
+      cg.destroy();
+    }
+
     this.burst = this.add.particles(this.cx, this.cy, 'pDot', {
       speed: { min: 140, max: 440 },
       angle: { min: 0, max: 360 },
@@ -963,6 +985,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.flash(200, 255, 255, 255, false);
     this.cameras.main.shake(280, 0.012);
 
+    // Cartoon mashup burst — colourful sunburst rays + fluffy cloud poof
+    this.playMashupBurst(CX, CY);
+
     const wave = this.add.graphics().setDepth(55);
     this.tweens.add({
       targets: { r: 0, a: 1 },
@@ -984,9 +1009,12 @@ export class GameScene extends Phaser.Scene {
     bolt.lineBetween(CX - this.gw * 0.11, CY, CX + this.gw * 0.11, CY);
     this.time.delayedCall(120, () => bolt.destroy());
 
-    this.burst.setPosition(CX, CY);
-    this.burst.explode(80);
-    this.time.delayedCall(120, () => {
+    // Confetti follows the poof so the cloud/rays read first
+    this.time.delayedCall(160, () => {
+      this.burst.setPosition(CX, CY);
+      this.burst.explode(80);
+    });
+    this.time.delayedCall(280, () => {
       this.burst.setPosition(CX - 60, CY); this.burst.explode(30);
       this.burst.setPosition(CX + 60, CY); this.burst.explode(30);
     });
@@ -994,8 +1022,88 @@ export class GameScene extends Phaser.Scene {
     this.selectedLeft?.pulseOut();
     this.selectedRight?.pulseOut();
 
-    this.time.delayedCall(420, () => {
+    this.time.delayedCall(520, () => {
       this.showResultCard(pair);
+    });
+  }
+
+  // ── Cartoon mashup burst (sunburst rays + cloud poof) ─────────────
+
+  private playMashupBurst(cx: number, cy: number) {
+    const base = Math.min(this.gw, this.gh);
+    const COLORS = [0xFF2DA0, 0x00E0FF, 0xFFD400, 0x7BE0A0, 0xFF8C2A, 0x9B6BFF, 0x4DA6FF, 0xFFFFFF];
+
+    // ── Sunburst rays — colourful capsules shooting outward from center ──
+    const RAY_COUNT = 16;
+    const rayLen = base * 0.34;
+    for (let i = 0; i < RAY_COUNT; i++) {
+      const ang = (i / RAY_COUNT) * 360 + (i % 2 === 0 ? 0 : 11);
+      const color = COLORS[i % COLORS.length];
+      const long = i % 2 === 0;
+      const w = long ? base * 0.022 : base * 0.014;
+      const ray = this.add.image(cx, cy, 'ray')
+        .setOrigin(0.5, 1)            // pivot at the tail so it grows from the center
+        .setAngle(ang)
+        .setTint(color)
+        .setDepth(53)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setDisplaySize(w, 1)
+        .setAlpha(0.95);
+      const len = rayLen * (long ? 1 : 0.62);
+      this.tweens.add({
+        targets: ray, displayHeight: len,
+        duration: 260, ease: 'Cubic.easeOut',
+        onComplete: () => {
+          this.tweens.add({
+            targets: ray, displayHeight: len * 1.18, alpha: 0,
+            duration: 240, ease: 'Cubic.easeIn',
+            onComplete: () => ray.destroy(),
+          });
+        },
+      });
+    }
+
+    // ── Fluffy cloud poof — a ring of cloud blobs blooming at the center ──
+    const PUFF_COUNT = 9;
+    const puffR = base * 0.075;
+    for (let i = 0; i < PUFF_COUNT; i++) {
+      const ang = Phaser.Math.DegToRad((i / PUFF_COUNT) * 360 + 18);
+      const dist = base * 0.05;
+      const px = cx + Math.cos(ang) * dist;
+      const py = cy + Math.sin(ang) * dist;
+      const puff = this.add.image(px, py, 'cloudPuff')
+        .setDisplaySize(puffR, puffR)
+        .setDepth(58)
+        .setAlpha(0)
+        .setScale(0.2);
+      const tgt = puffR * Phaser.Math.FloatBetween(1.5, 2.1);
+      this.tweens.add({
+        targets: puff, displayWidth: tgt, displayHeight: tgt, alpha: 1,
+        x: cx + Math.cos(ang) * dist * 2.4,
+        y: cy + Math.sin(ang) * dist * 2.4,
+        duration: 220, ease: 'Back.easeOut',
+        onComplete: () => {
+          this.tweens.add({
+            targets: puff, alpha: 0, displayWidth: tgt * 1.25, displayHeight: tgt * 1.25,
+            duration: 320, ease: 'Cubic.easeIn', delay: 60,
+            onComplete: () => puff.destroy(),
+          });
+        },
+      });
+    }
+
+    // Dense central puff to hide the seam where cards meet
+    const core = this.add.image(cx, cy, 'cloudPuff')
+      .setDisplaySize(puffR * 1.4, puffR * 1.4)
+      .setDepth(59).setAlpha(0).setScale(0.3);
+    this.tweens.add({
+      targets: core, alpha: 1, scaleX: 1.6, scaleY: 1.6,
+      duration: 200, ease: 'Back.easeOut',
+      onComplete: () => this.tweens.add({
+        targets: core, alpha: 0, scaleX: 2.0, scaleY: 2.0,
+        duration: 340, ease: 'Cubic.easeIn', delay: 40,
+        onComplete: () => core.destroy(),
+      }),
     });
   }
 
