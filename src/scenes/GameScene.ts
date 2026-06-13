@@ -1019,11 +1019,6 @@ export class GameScene extends Phaser.Scene {
       const tex = this.textures.get(imgKey).getSourceImage() as { width: number; height: number };
       const CRH = Math.round(CRW * (tex.height / tex.width));
 
-      // Soft drop shadow behind the card
-      const shadow = this.add.graphics();
-      shadow.fillStyle(0x000000, 0.35);
-      shadow.fillRoundedRect(-CRW / 2 + 6, -CRH / 2 + 10, CRW, CRH, 22);
-
       const cardImg = this.add.image(0, 0, imgKey).setDisplaySize(CRW, CRH);
 
       // "NEW!" unlock badge overlaid on the top-left
@@ -1034,7 +1029,7 @@ export class GameScene extends Phaser.Scene {
         fontFamily: 'Baloo 2', fontSize: '16px', color: '#FFFFFF', fontStyle: 'bold',
       }).setOrigin(0.5);
 
-      cont.add([shadow, cardImg, bg, newBadge]);
+      cont.add([cardImg, bg, newBadge]);
     } else {
       // ── Fallback: drawn gold card with emoji (result image not uploaded yet) ──
       const CRH = Math.round(CRW * 1.29);
