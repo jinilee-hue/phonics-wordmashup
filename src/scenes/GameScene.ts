@@ -1281,8 +1281,6 @@ export class GameScene extends Phaser.Scene {
       y: ry, alpha: 1, scaleX: 1, scaleY: 1,
       duration: 560, ease: 'Back.easeOut',
       onComplete: () => {
-        this.burst.setPosition(rx, ry);
-        this.burst.explode(40);
         this.playShineSweep(rx, ry, CRW, CRH);   // light sweeps across the face
         this.onRoundWin(cont);
       },
@@ -1419,7 +1417,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onRoundWin(resultCont: Phaser.GameObjects.Container) {
-    const { cx: CX, cy: CY } = this;
     this.animateProgressTo((this.roundIndex + 1) / ROUNDS);
 
     const prevScore = this.score, prevCoins = this.coins, prevGems = this.gems;
@@ -1432,17 +1429,6 @@ export class GameScene extends Phaser.Scene {
     this.bumpBadge(this.scoreText);
     this.time.delayedCall(80,  () => this.bumpBadge(this.coinText));
     this.time.delayedCall(160, () => this.bumpBadge(this.gemText));
-
-    const reward = this.add.text(CX + 80, CY - 60, '+10', {
-      fontFamily: 'Baloo 2', fontSize: '28px', color: '#FFD700', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(60).setAlpha(0);
-    this.tweens.add({
-      targets: reward, y: CY - 130, alpha: 1,
-      duration: 500, ease: 'Cubic.easeOut',
-      onComplete: () => {
-        this.tweens.add({ targets: reward, alpha: 0, duration: 400, delay: 400, onComplete: () => reward.destroy() });
-      },
-    });
 
     this.time.delayedCall(2400, () => {
       this.tweens.add({
