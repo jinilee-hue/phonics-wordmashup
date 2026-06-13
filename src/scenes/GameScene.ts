@@ -1639,7 +1639,7 @@ export class GameScene extends Phaser.Scene {
 
     const btnBg = this.add.image(CX, bCY, 'btn_replay_bg').setDisplaySize(bW, bH).setDepth(72).setAlpha(0);
     const btnIcon = this.add.image(0, bCY, 'icon_replay').setDisplaySize(iconSz, iconSz).setDepth(73).setAlpha(0);
-    const btnTxt = this.add.text(0, bCY, 'Play Again', {
+    const btnTxt = this.add.text(0, bCY, 'Next Level', {
       fontFamily: '"Inter", "Baloo 2"', fontSize: `${Math.round(bH * 0.34)}px`,
       color: '#FFFFFF', fontStyle: 'bold',
       shadow: { offsetX: 0, offsetY: Math.round(s * 2), color: 'rgba(0,0,0,0.25)', blur: 2, fill: true },
