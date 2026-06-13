@@ -1034,17 +1034,18 @@ export class GameScene extends Phaser.Scene {
   private playRisingLights(cx: number, cy: number) {
     const PINK = 0xFF2DA0;
     const CYAN = 0x00E0FF;
-    const span = this.zoneR * 1.15;
-    const baseY = cy + this.zoneR * 0.35;
+    const span = this.zoneR * 1.2;
+    // Start low — down at the floor behind the zone — and rise gently from there
+    const baseY = cy + this.zoneR * 1.05;
 
-    // Vertical neon light streaks shooting upward from around the ring
+    // Thin vertical neon light columns easing softly upward from the background
     const COUNT = 13;
     for (let i = 0; i < COUNT; i++) {
       const t = i / (COUNT - 1);
       const x = cx - span + t * span * 2 + Phaser.Math.Between(-8, 8);
       const color = i % 2 === 0 ? PINK : CYAN;
-      const w = this.zoneR * Phaser.Math.FloatBetween(0.07, 0.13);
-      const h = this.zoneR * Phaser.Math.FloatBetween(1.8, 2.9);
+      const w = this.zoneR * Phaser.Math.FloatBetween(0.028, 0.05);
+      const h = this.zoneR * Phaser.Math.FloatBetween(1.3, 2.1);
       const streak = this.add.image(x, baseY, 'ray')
         .setOrigin(0.5, 1)          // grows upward from its base
         .setTint(color)
@@ -1053,37 +1054,37 @@ export class GameScene extends Phaser.Scene {
         .setDisplaySize(w, 1)
         .setAlpha(0);
       this.tweens.add({
-        targets: streak, displayHeight: h, alpha: 0.95,
-        y: baseY - this.zoneR * 0.25,
-        duration: 380 + i * 18, ease: 'Cubic.easeOut',
+        targets: streak, displayHeight: h, alpha: 0.5,   // subtle
+        y: baseY - this.zoneR * 0.2,
+        duration: 520 + i * 24, ease: 'Sine.easeOut',
         onComplete: () => {
           this.tweens.add({
-            targets: streak, alpha: 0, displayHeight: h * 1.15,
-            y: streak.y - this.zoneR * 0.6,
-            duration: 480, ease: 'Cubic.easeIn',
+            targets: streak, alpha: 0, displayHeight: h * 1.1,
+            y: streak.y - this.zoneR * 0.5,
+            duration: 560, ease: 'Sine.easeIn',
             onComplete: () => streak.destroy(),
           });
         },
       });
     }
 
-    // Glowing sparkles drifting upward through the column
+    // A few soft sparkles drifting up from the floor
     const sparks = this.add.particles(0, 0, 'pDot', {
       x: { min: cx - span, max: cx + span },
       y: baseY,
-      speedY: { min: -320, max: -140 },
-      speedX: { min: -40, max: 40 },
-      accelerationY: -60,
-      scale: { start: 0.5, end: 0 },
-      alpha: { start: 0.9, end: 0 },
-      lifespan: { min: 600, max: 1100 },
+      speedY: { min: -220, max: -90 },
+      speedX: { min: -30, max: 30 },
+      accelerationY: -40,
+      scale: { start: 0.38, end: 0 },
+      alpha: { start: 0.6, end: 0 },
+      lifespan: { min: 700, max: 1200 },
       tint: [PINK, CYAN, 0xFFFFFF],
       blendMode: 'ADD',
       quantity: 0,
       emitting: false,
     }).setDepth(6);
-    sparks.explode(38);
-    this.time.delayedCall(1300, () => sparks.destroy());
+    sparks.explode(26);
+    this.time.delayedCall(1400, () => sparks.destroy());
   }
 
   // ── Cartoon mashup burst (sunburst rays + cloud poof) ─────────────
