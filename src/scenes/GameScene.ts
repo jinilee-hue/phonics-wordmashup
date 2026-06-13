@@ -170,6 +170,34 @@ export class GameScene extends Phaser.Scene {
       rg.destroy();
     }
 
+    // ── 'rayGrad' — god-ray: opaque at the base, fading to 100% clear at the tip ──
+    if (!this.textures.exists('rayGrad')) {
+      const W = 28, H = 200;
+      const rg2 = this.make.graphics({ x: 0, y: 0 }, false);
+      for (let y = 0; y < H; y++) {
+        // y=0 is the tip (far, transparent), y=H is the base (near card, opaque)
+        rg2.fillStyle(0xffffff, y / H);
+        rg2.fillRect(0, y, W, 1);
+      }
+      rg2.generateTexture('rayGrad', W, H);
+      rg2.destroy();
+    }
+
+    // ── 'starSpark' — a 4-point twinkle star ──
+    if (!this.textures.exists('starSpark')) {
+      const S = 64, c = S / 2, tip = 30, waist = 5;
+      const sg2 = this.make.graphics({ x: 0, y: 0 }, false);
+      sg2.fillStyle(0xffffff, 1);
+      sg2.fillPoints([
+        new Phaser.Geom.Point(c, c - tip), new Phaser.Geom.Point(c + waist, c - waist),
+        new Phaser.Geom.Point(c + tip, c), new Phaser.Geom.Point(c + waist, c + waist),
+        new Phaser.Geom.Point(c, c + tip), new Phaser.Geom.Point(c - waist, c + waist),
+        new Phaser.Geom.Point(c - tip, c), new Phaser.Geom.Point(c - waist, c - waist),
+      ], true);
+      sg2.generateTexture('starSpark', S, S);
+      sg2.destroy();
+    }
+
     // ── 'softGlow' — soft radial white glow for the card-reveal flare ──
     if (!this.textures.exists('softGlow')) {
       const sg = this.make.graphics({ x: 0, y: 0 }, false);
@@ -1292,43 +1320,45 @@ export class GameScene extends Phaser.Scene {
     const SPOKES = 14;
     for (let i = 0; i < SPOKES; i++) {
       const long = i % 2 === 0;
-      const ray = this.add.image(0, 0, 'ray')
-        .setOrigin(0.5, 1)
+      const ray = this.add.image(0, 0, 'rayGrad')
+        .setOrigin(0.5, 1)            // base at center; tip fades to fully transparent
         .setAngle((i / SPOKES) * 360)
         .setTint(0xFFFFFF)
-        .setDisplaySize(CRW * (long ? 0.055 : 0.035), CRH * (long ? 1.4 : 1.12));
+        .setDisplaySize(CRW * (long ? 0.05 : 0.032), CRH * (long ? 1.5 : 1.18));
       spokes.add(ray);
     }
     this.tweens.add({
-      targets: spokes, alpha: 0.45, scaleX: 1.12, scaleY: 1.12,   // translucent white
-      duration: 300, ease: 'Cubic.easeOut',
+      targets: spokes, alpha: 0.28, scaleX: 1.12, scaleY: 1.12,   // faint translucent white
+      duration: 320, ease: 'Cubic.easeOut',
       onComplete: () => this.tweens.add({
         targets: spokes, alpha: 0, scaleX: 1.3, scaleY: 1.3,
-        duration: 640, ease: 'Cubic.easeIn',
+        duration: 680, ease: 'Cubic.easeIn',
         onComplete: () => spokes.destroy(),
       }),
     });
-    // Spin while it appears
-    this.tweens.add({ targets: spokes, rotation: 0.9, duration: 940, ease: 'Cubic.easeOut' });
+    // Spin clockwise while it appears (positive rotation = clockwise in screen space)
+    this.tweens.add({ targets: spokes, rotation: 1.1, duration: 1000, ease: 'Cubic.easeOut' });
 
-    // Sparkle ring — bright twinkles popping around the card edge
+    // Sparkle ring — twinkling stars popping around the card edge
     const SPARKS = 18;
+    const sBase = (CRW * 0.085) / 64;   // star display scale (texture is 64px)
     for (let i = 0; i < SPARKS; i++) {
       const ang = (i / SPARKS) * Math.PI * 2 + Phaser.Math.FloatBetween(-0.15, 0.15);
-      const rr = CRW * Phaser.Math.FloatBetween(0.58, 0.78);
+      const rr = CRW * Phaser.Math.FloatBetween(0.58, 0.82);
+      const big = sBase * Phaser.Math.FloatBetween(0.7, 1.3);
       const sx = rx + Math.cos(ang) * rr;
       const sy = ry + Math.sin(ang) * rr * (CRH / CRW);
-      const spark = this.add.image(sx, sy, 'pDot')
-        .setTint(i % 3 === 0 ? 0xFFFFFF : 0xFFC400)
-        .setDepth(60).setAlpha(0).setScale(0.2);
+      const spark = this.add.image(sx, sy, 'starSpark')
+        .setTint(i % 3 === 0 ? 0xFFFFFF : 0xFFE680)
+        .setDepth(60).setAlpha(0).setScale(0).setAngle(Phaser.Math.Between(0, 90));
       this.tweens.add({
-        targets: spark, alpha: 1, scaleX: 1.0, scaleY: 1.0,
+        targets: spark, alpha: 1, scaleX: big, scaleY: big, angle: spark.angle + 45,
         x: rx + Math.cos(ang) * rr * 1.28,
         y: ry + Math.sin(ang) * rr * 1.28 * (CRH / CRW),
-        duration: 300, ease: 'Cubic.easeOut', delay: 100 + i * 12,
+        duration: 300, ease: 'Back.easeOut', delay: 100 + i * 12,
         onComplete: () => this.tweens.add({
-          targets: spark, alpha: 0, scaleX: 0, scaleY: 0,
-          duration: 360, ease: 'Cubic.easeIn',
+          targets: spark, alpha: 0, scaleX: 0, scaleY: 0, angle: spark.angle + 90,
+          duration: 380, ease: 'Cubic.easeIn',
           onComplete: () => spark.destroy(),
         }),
       });
