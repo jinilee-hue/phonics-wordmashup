@@ -1021,15 +1021,7 @@ export class GameScene extends Phaser.Scene {
 
       const cardImg = this.add.image(0, 0, imgKey).setDisplaySize(CRW, CRH);
 
-      // "NEW!" unlock badge overlaid on the top-left
-      const bg = this.add.graphics();
-      bg.fillStyle(0xFF4400, 1);
-      bg.fillRoundedRect(-CRW / 2 + 10, -CRH / 2 + 10, 64, 28, 10);
-      const newBadge = this.add.text(-CRW / 2 + 42, -CRH / 2 + 24, 'NEW!', {
-        fontFamily: 'Baloo 2', fontSize: '16px', color: '#FFFFFF', fontStyle: 'bold',
-      }).setOrigin(0.5);
-
-      cont.add([cardImg, bg, newBadge]);
+      cont.add([cardImg]);
     } else {
       // ── Fallback: drawn gold card with emoji (result image not uploaded yet) ──
       const CRH = Math.round(CRW * 1.29);
@@ -1052,13 +1044,6 @@ export class GameScene extends Phaser.Scene {
       g.fillRoundedRect(-CRW / 2 + 10, -CRH / 2 + 10, CRW - 20, CRH * 0.58,
         { tl: CR - 4, tr: CR - 4, bl: 0, br: 0 });
 
-      g.fillStyle(0xFF4400, 1);
-      g.fillRoundedRect(-CRW / 2 + 10, -CRH / 2 + 10, 64, 28, 10);
-
-      const newBadge = this.add.text(-CRW / 2 + 42, -CRH / 2 + 24, 'NEW!', {
-        fontFamily: 'Baloo 2', fontSize: '16px', color: '#FFFFFF', fontStyle: 'bold',
-      }).setOrigin(0.5);
-
       const iconFs = Math.round(CRH * 0.27);
       const iconText = this.add.text(0, -CRH / 2 + CRH * 0.31, pair.iconResult, {
         fontSize: `${iconFs}px`,
@@ -1077,7 +1062,7 @@ export class GameScene extends Phaser.Scene {
         fontFamily: 'Noto Sans KR', fontSize: `${Math.round(CRH * 0.06)}px`, color: '#AA9966',
       }).setOrigin(0.5);
 
-      cont.add([g, newBadge, iconText, wordText, pronText]);
+      cont.add([g, iconText, wordText, pronText]);
     }
 
     this.tweens.add({
