@@ -1454,62 +1454,153 @@ export class GameScene extends Phaser.Scene {
   private showFinale() {
     const { gw: GW, gh: GH, cx: CX, cy: CY } = this;
 
-    for (let i = 0; i < 6; i++) {
+    // Dim backdrop
+    const dim = this.add.graphics().setDepth(70).setAlpha(0);
+    dim.fillStyle(0x000000, 0.72);
+    dim.fillRect(0, 0, GW, GH);
+    this.tweens.add({ targets: dim, alpha: 1, duration: 400 });
+
+    // ── Open "Compound Book" ──────────────────────────────────────
+    const bookW = Math.round(GW * 0.66);
+    const bookH = Math.round(GH * 0.62);
+    const bookCY = CY - Math.round(GH * 0.03);
+    const r = Math.round(Math.min(bookW, bookH) * 0.05);
+
+    const book = this.add.container(CX, bookCY).setDepth(71).setAlpha(0).setScale(0.82);
+
+    const g = this.add.graphics();
+    // drop shadow
+    g.fillStyle(0x000000, 0.4);
+    g.fillRoundedRect(-bookW / 2 + 8, -bookH / 2 + 14, bookW, bookH, r);
+    // cover (brown)
+    g.fillStyle(0x6E4A2A, 1);
+    g.fillRoundedRect(-bookW / 2, -bookH / 2, bookW, bookH, r);
+    g.lineStyle(Math.max(3, Math.round(bookW * 0.006)), 0x3E2814, 1);
+    g.strokeRoundedRect(-bookW / 2, -bookH / 2, bookW, bookH, r);
+    // two cream pages with a centre gutter
+    const inset = Math.round(bookW * 0.035);
+    const gutter = Math.round(bookW * 0.012);
+    const pageW = (bookW - inset * 2 - gutter * 2) / 2;
+    const pageH = bookH - inset * 2;
+    const pageY = -bookH / 2 + inset;
+    g.fillStyle(0xFFF7E6, 1);
+    g.fillRoundedRect(-bookW / 2 + inset, pageY, pageW, pageH, Math.round(r * 0.5));
+    g.fillRoundedRect(gutter, pageY, pageW, pageH, Math.round(r * 0.5));
+    // spine shadow at centre
+    g.fillStyle(0x000000, 0.12);
+    g.fillRect(-gutter, pageY, gutter * 2, pageH);
+    book.add(g);
+
+    // Title ribbon at the top of the book
+    const ribbonW = Math.round(bookW * 0.5);
+    const ribbonH = Math.round(bookH * 0.13);
+    const rib = this.add.graphics();
+    rib.fillStyle(0xC9382E, 1);
+    rib.fillRoundedRect(-ribbonW / 2, -bookH / 2 - ribbonH * 0.35, ribbonW, ribbonH, ribbonH / 2);
+    rib.fillStyle(0x9E261D, 1);
+    rib.fillRoundedRect(-ribbonW / 2, -bookH / 2 - ribbonH * 0.35 + ribbonH * 0.6, ribbonW, ribbonH * 0.4, { tl: 0, tr: 0, bl: ribbonH / 2, br: ribbonH / 2 });
+    const title = this.add.text(0, -bookH / 2 - ribbonH * 0.35 + ribbonH / 2, 'Compound Book', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(ribbonH * 0.5)}px`,
+      color: '#FFFFFF', fontStyle: 'bold',
+      shadow: { offsetX: 0, offsetY: 2, color: 'rgba(0,0,0,0.35)', blur: 2, fill: true },
+    }).setOrigin(0.5);
+    book.add([rib, title]);
+
+    // ── Card grid (3 × 2) that fills in one by one ────────────────
+    const made = this.queue.slice(0, ROUNDS).map(p => p.result);
+    const cols = 3, rows = 2;
+    const gridLeft = -bookW / 2 + bookW * 0.085;
+    const gridRight = bookW / 2 - bookW * 0.085;
+    const gridTop = -bookH / 2 + bookH * 0.20;
+    const gridBottom = bookH / 2 - bookH * 0.07;
+    const cellW = (gridRight - gridLeft) / cols;
+    const cellH = (gridBottom - gridTop) / rows;
+    const cardH = Math.min(cellH * 0.88, (cellW * 0.84) * 1.21);
+    const cardW = cardH / 1.21;
+
+    const slots = this.add.graphics();
+    book.add(slots);
+
+    made.forEach((result, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const lx = gridLeft + cellW * (col + 0.5);
+      const ly = gridTop + cellH * (row + 0.5);
+
+      // empty slot outline on the page
+      slots.fillStyle(0x000000, 0.05);
+      slots.fillRoundedRect(lx - cardW / 2 - 4, ly - cardH / 2 - 4, cardW + 8, cardH + 8, 10);
+      slots.lineStyle(1.5, 0x000000, 0.08);
+      slots.strokeRoundedRect(lx - cardW / 2 - 4, ly - cardH / 2 - 4, cardW + 8, cardH + 8, 10);
+
+      const key = `card_${result}`;
+      let obj: Phaser.GameObjects.GameObject & { setScale: (x: number, y?: number) => unknown; setAlpha: (a: number) => unknown };
+      let tsx = 1, tsy = 1;
+      if (this.textures.exists(key)) {
+        const im = this.add.image(lx, ly, key).setDisplaySize(cardW, cardH);
+        tsx = im.scaleX; tsy = im.scaleY;
+        obj = im as unknown as typeof obj;
+      } else {
+        const fc = this.add.container(lx, ly);
+        const cg = this.add.graphics();
+        cg.fillStyle(0xFFE6A0, 1); cg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
+        cg.lineStyle(2, 0xB8860B, 1); cg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 8);
+        const ct = this.add.text(0, 0, result, {
+          fontFamily: '"Baloo 2"', fontSize: `${Math.round(cardW * 0.16)}px`,
+          color: '#7A5200', fontStyle: 'bold', align: 'center', wordWrap: { width: cardW * 0.85 },
+        }).setOrigin(0.5);
+        fc.add([cg, ct]);
+        obj = fc as unknown as typeof obj;
+      }
+      book.add(obj as unknown as Phaser.GameObjects.GameObject);
+      obj.setScale(0); obj.setAlpha(0);
+
+      this.tweens.add({
+        targets: obj, scaleX: tsx, scaleY: tsy, alpha: 1,
+        duration: 360, ease: 'Back.easeOut', delay: 360 + i * 170,
+        onComplete: () => {
+          this.burst.setPosition(CX + lx, bookCY + ly);
+          this.burst.explode(14);
+        },
+      });
+    });
+
+    // Book entrance
+    this.tweens.add({ targets: book, alpha: 1, scaleX: 1, scaleY: 1, duration: 360, ease: 'Back.easeOut' });
+
+    // Celebration confetti
+    for (let i = 0; i < 5; i++) {
       this.time.delayedCall(i * 180, () => {
-        this.burst.setPosition(Math.random() * GW, Math.random() * GH * 0.6);
-        this.burst.explode(50);
+        this.burst.setPosition(Math.random() * GW, Math.random() * GH * 0.5);
+        this.burst.explode(40);
       });
     }
 
-    const dim = this.add.graphics().setDepth(70).setAlpha(0);
-    dim.fillStyle(0x000000, 0.7);
-    dim.fillRect(0, 0, GW, GH);
-    this.tweens.add({ targets: dim, alpha: 1, duration: 500 });
-
-    const pw = Math.round(GW * 0.58);
-    const ph = Math.round(GH * 0.57);
-    const panel = this.add.graphics().setDepth(71);
-    panel.fillStyle(0x080818, 1);
-    panel.fillRoundedRect(CX - pw / 2, CY - ph / 2, pw, ph, 36);
-    panel.lineStyle(4, 0xFFD700, 1);
-    panel.strokeRoundedRect(CX - pw / 2, CY - ph / 2, pw, ph, 36);
-
-    this.add.text(CX, CY - ph * 0.37, '🎉', { fontSize: `${Math.round(ph * 0.18)}px` }).setOrigin(0.5).setDepth(72);
-
-    this.add.text(CX, CY - ph * 0.12, 'AMAZING!', {
-      fontFamily: 'Baloo 2', fontSize: `${Math.round(ph * 0.16)}px`, color: '#FFD700', fontStyle: 'bold',
-      shadow: { offsetX: 3, offsetY: 5, color: '#000000', blur: 12, fill: true },
-    }).setOrigin(0.5).setDepth(72);
-
-    this.add.text(CX, CY + ph * 0.07, `You made ${ROUNDS} new words!`, {
-      fontFamily: 'Baloo 2', fontSize: `${Math.round(ph * 0.075)}px`, color: '#FFFFFF',
-    }).setOrigin(0.5).setDepth(72);
-
-    this.add.text(CX, CY + ph * 0.19, `Score: ${this.score}`, {
-      fontFamily: 'Baloo 2', fontSize: `${Math.round(ph * 0.095)}px`, color: '#74C0E8', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(72);
-
-    const bw = Math.round(pw * 0.42);
-    const bh = Math.round(ph * 0.145);
-    const btnG = this.add.graphics().setDepth(72);
+    // ── Play Again button (appears after the cards fill in) ───────
+    const bw = Math.round(bookW * 0.3);
+    const bh = Math.round(bookH * 0.15);
     const bx = CX - bw / 2;
-    const by = CY + ph * 0.3;
-    btnG.fillStyle(0xFF6B35, 1);
-    btnG.fillRoundedRect(bx, by, bw, bh, bh / 2);
-    btnG.lineStyle(3, 0xFFFFFF, 0.6);
-    btnG.strokeRoundedRect(bx, by, bw, bh, bh / 2);
+    const by = bookCY + bookH / 2 + Math.round(GH * 0.03);
+    const btnG = this.add.graphics().setDepth(72).setAlpha(0);
+    const drawBtn = (fill: number) => {
+      btnG.clear();
+      btnG.fillStyle(fill, 1); btnG.fillRoundedRect(bx, by, bw, bh, bh / 2);
+      btnG.lineStyle(3, 0xFFFFFF, 0.6); btnG.strokeRoundedRect(bx, by, bw, bh, bh / 2);
+    };
+    drawBtn(0xFF6B35);
+    const btnTxt = this.add.text(CX, by + bh / 2, '▶  Play Again', {
+      fontFamily: 'Baloo 2', fontSize: `${Math.round(bh * 0.4)}px`, color: '#FFFFFF', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(73).setAlpha(0);
 
-    this.add.text(CX, by + bh / 2, '▶  Play Again', {
-      fontFamily: 'Baloo 2', fontSize: `${Math.round(bh * 0.46)}px`, color: '#FFFFFF', fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(73);
+    const btnDelay = 360 + ROUNDS * 170 + 200;
+    this.tweens.add({ targets: [btnG, btnTxt], alpha: 1, duration: 300, delay: btnDelay });
 
     btnG.setInteractive(new Phaser.Geom.Rectangle(bx, by, bw, bh), Phaser.Geom.Rectangle.Contains);
     btnG.on('pointerdown', () => {
       this.cameras.main.fadeOut(300, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
     });
-    btnG.on('pointerover', () => { btnG.clear(); btnG.fillStyle(0xFF4400, 1); btnG.fillRoundedRect(bx, by, bw, bh, bh / 2); });
-    btnG.on('pointerout', () => { btnG.clear(); btnG.fillStyle(0xFF6B35, 1); btnG.fillRoundedRect(bx, by, bw, bh, bh / 2); });
+    btnG.on('pointerover', () => drawBtn(0xFF4400));
+    btnG.on('pointerout', () => drawBtn(0xFF6B35));
   }
 
 }
