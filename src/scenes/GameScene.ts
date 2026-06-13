@@ -18,9 +18,13 @@ export class GameScene extends Phaser.Scene {
   private selectedLeft?: WordCard;
   private selectedRight?: WordCard;
   private zoneGfx!: Phaser.GameObjects.Graphics;
+  private zoneGlowGfx!: Phaser.GameObjects.Graphics;
   private zoneSpinGfx!: Phaser.GameObjects.Graphics;
   private zoneSpinContainer!: Phaser.GameObjects.Container;
   private zonePulse!: Phaser.Tweens.Tween;
+  private zoneAnimT = 0;
+  private neonGlowLayers: { obj: Phaser.GameObjects.Text; base: number }[] = [];
+  private neonCores: Phaser.GameObjects.Text[] = [];
   private queue: CompoundPair[] = [];
   private roundIndex = 0;
   private score = 0;
@@ -57,6 +61,9 @@ export class GameScene extends Phaser.Scene {
     // Word-specific card images (right)
     ['bag','ball','bell','board','book','bow','brush','cake','day','end','fall','fish','flake','flower','fly','ground','house','light','melon','paper','place','pot','rise','set','shelf','shell']
       .forEach(w => this.load.image(`card_right_${w}`, `./images/card_right_${w}.png`));
+    // Combined-word result cards (e.g. card_pancake.png). Loaded for every compound;
+    // any not yet uploaded simply fail to register and fall back to the drawn card.
+    COMPOUND_PAIRS.forEach(p => this.load.image(`card_${p.result}`, `./images/card_${p.result}.png`));
     // HUD bar
     this.load.svg('hud_bar_main', './images/hud_bar_main.svg', { scale: 2 });
     this.load.svg('hud_bar_pill', './images/hud_bar_pill.svg', { scale: 2 });
@@ -114,9 +121,14 @@ export class GameScene extends Phaser.Scene {
     this.startRound();
   }
 
-  update() {
+  update(_time: number, delta: number) {
     if (this.zoneSpinContainer?.active) {
       this.zoneSpinContainer.rotation += 0.012;
+    }
+    if (this.zoneGlowGfx) {
+      this.zoneAnimT += delta / 1000;
+      this.drawAnimatedGlow(this.zoneAnimT);
+      this.syncNeonText(this.zoneAnimT);
     }
   }
 
@@ -401,6 +413,10 @@ export class GameScene extends Phaser.Scene {
     this.zoneGfx = this.add.graphics().setDepth(6);
     this.drawStaticZone();
 
+    // Animated glow layer — pulsing bloom + light sweep racing around the ring.
+    // Sits above the static zone but below the text so the rings light up behind GRAVITY/ZONE.
+    this.zoneGlowGfx = this.add.graphics().setDepth(6.5).setBlendMode(Phaser.BlendModes.ADD);
+
     // Spinning ring container — text is NOT inside so it stays readable
     this.zoneSpinContainer = this.add.container(CX, CY).setDepth(7);
     this.zoneSpinGfx = this.add.graphics();
@@ -411,33 +427,36 @@ export class GameScene extends Phaser.Scene {
     // Use zoneR to derive font size so it fills the circle regardless of screen size
     const fs = Math.round(this.zoneR * 0.52);
     const makeNeonText = (x: number, y: number, label: string, glowHex: string) => {
-      // Outer bloom layer
-      this.add.text(x, y, label, {
+      // Outer bloom layer — breathes with the ring (ADD blend = glows into the rings behind)
+      const outer = this.add.text(x, y, label, {
         fontFamily: '"Baloo 2", sans-serif', fontSize: `${fs}px`,
         color: glowHex, fontStyle: 'bold',
         shadow: { offsetX: 0, offsetY: 0, color: glowHex, blur: 40, fill: true },
-      }).setOrigin(0.5).setDepth(7).setScale(1.5).setAlpha(0.18);
+      }).setOrigin(0.5).setDepth(7).setScale(1.5).setAlpha(0.18).setBlendMode(Phaser.BlendModes.ADD);
+      this.neonGlowLayers.push({ obj: outer, base: 0.18 });
       // Mid bloom layer
-      this.add.text(x, y, label, {
+      const mid = this.add.text(x, y, label, {
         fontFamily: '"Baloo 2", sans-serif', fontSize: `${fs}px`,
         color: glowHex, fontStyle: 'bold',
         shadow: { offsetX: 0, offsetY: 0, color: glowHex, blur: 24, fill: true },
-      }).setOrigin(0.5).setDepth(7).setScale(1.2).setAlpha(0.28);
+      }).setOrigin(0.5).setDepth(7).setScale(1.2).setAlpha(0.28).setBlendMode(Phaser.BlendModes.ADD);
+      this.neonGlowLayers.push({ obj: mid, base: 0.28 });
       // Crisp white core
-      return this.add.text(x, y, label, {
+      const core = this.add.text(x, y, label, {
         fontFamily: '"Baloo 2", sans-serif', fontSize: `${fs}px`,
         color: '#FFFFFF', fontStyle: 'bold',
         shadow: { offsetX: 0, offsetY: 0, color: glowHex, blur: 18, fill: true },
       }).setOrigin(0.5).setDepth(8);
+      this.neonCores.push(core);
+      return core;
     };
     makeNeonText(CX, CY - Math.round(fs * 0.55), 'GRAVITY', '#00E0FF');
     makeNeonText(CX, CY + Math.round(fs * 0.50), 'ZONE',    '#FF2DA0');
 
+    // Subtle breathing of the static base zone (no scale → avoids drift; glow layer does the flashing)
     this.zonePulse = this.tweens.add({
       targets: this.zoneGfx,
-      alpha: { from: 0.65, to: 1 },
-      scaleX: { from: 1, to: 1.04 },
-      scaleY: { from: 1, to: 1.04 },
+      alpha: { from: 0.78, to: 1 },
       duration: 1400, ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
     });
   }
@@ -488,6 +507,9 @@ export class GameScene extends Phaser.Scene {
       g.lineStyle(w as number, PINK, a as number);
       g.strokeCircle(CX, CY, ZONE_R);
     });
+    // white-hot inner edge — brighter base highlight
+    g.lineStyle(1, 0xFFFFFF, 0.7);
+    g.strokeCircle(CX, CY, ZONE_R);
 
     // ── Far cyan halo rings ───────────────────────────────────────
     [[ZONE_R + 85, 0.03], [ZONE_R + 52, 0.07], [ZONE_R + 26, 0.16]].forEach(([r, a]) => {
@@ -536,6 +558,82 @@ export class GameScene extends Phaser.Scene {
       g.fillStyle(color, 0.25); g.fillCircle(Math.cos(rad) * r, Math.sin(rad) * r, 8);
       g.fillStyle(color, 0.90); g.fillCircle(Math.cos(rad) * r, Math.sin(rad) * r, 4);
     }
+  }
+
+  // ── Animated glow + light sweep (runs every frame) ───────────────
+
+  private drawAnimatedGlow(t: number) {
+    const { cx: CX, cy: CY, zoneR: ZONE_R } = this;
+    const g = this.zoneGlowGfx;
+    const PINK = 0xFF2DA0;
+    const CYAN = 0x00E0FF;
+    const WHITE = 0xFFFFFF;
+    g.clear();
+
+    // Overall breathing pulse 0..1 (slow heartbeat of the whole zone)
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.2);
+    // Fast shimmer layered on top for a "flickering lights" feel
+    const shimmer = 0.85 + 0.15 * Math.sin(t * 9.0);
+    const heat = pulse * shimmer;
+
+    // ── Pulsing bloom haze (ADD blend brightens whatever is behind) ──
+    [[ZONE_R * 1.55, 0.05], [ZONE_R * 1.18, 0.08], [ZONE_R * 0.95, 0.11]].forEach(([r, a]) => {
+      g.fillStyle(PINK, (a as number) * (0.35 + heat * 0.95));
+      g.fillCircle(CX, CY, r as number);
+    });
+    [[ZONE_R * 1.32, 0.04], [ZONE_R * 1.0, 0.07], [ZONE_R * 0.74, 0.09]].forEach(([r, a]) => {
+      g.fillStyle(CYAN, (a as number) * (0.35 + heat * 0.95));
+      g.fillCircle(CX, CY, r as number);
+    });
+
+    // ── Bright ring overlays that flare with the pulse ──────────────
+    [[16, 0.06], [9, 0.14], [4, 0.30], [1.5, 0.55]].forEach(([w, a]) => {
+      g.lineStyle(w as number, PINK, (a as number) * (0.4 + heat * 0.85));
+      g.strokeCircle(CX, CY, ZONE_R);
+    });
+    [[12, 0.05], [6, 0.12], [2.5, 0.28]].forEach(([w, a]) => {
+      g.lineStyle(w as number, CYAN, (a as number) * (0.4 + heat * 0.85));
+      g.strokeCircle(CX, CY, ZONE_R * 0.76);
+    });
+    [[10, 0.05], [5, 0.12], [2, 0.26]].forEach(([w, a]) => {
+      g.lineStyle(w as number, PINK, (a as number) * (0.4 + heat * 0.85));
+      g.strokeCircle(CX, CY, ZONE_R * 0.52);
+    });
+    // White-hot core line on the main ring at the pulse peak
+    g.lineStyle(2, WHITE, 0.25 + heat * 0.6);
+    g.strokeCircle(CX, CY, ZONE_R);
+
+    // ── Light sweep — bright comets racing around the main ring ─────
+    const COMETS = 3;
+    for (let i = 0; i < COMETS; i++) {
+      const ang = t * 1.7 + (i * Math.PI * 2 / COMETS);
+      const col = i % 2 === 0 ? CYAN : PINK;
+      // trailing tail
+      for (let tr = 6; tr >= 1; tr--) {
+        const ta = ang - tr * 0.10;
+        const tx = CX + Math.cos(ta) * ZONE_R;
+        const ty = CY + Math.sin(ta) * ZONE_R;
+        const f = 1 - tr / 7;
+        g.fillStyle(col, 0.30 * f);
+        g.fillCircle(tx, ty, 6 * f);
+      }
+      // bright head
+      const hx = CX + Math.cos(ang) * ZONE_R;
+      const hy = CY + Math.sin(ang) * ZONE_R;
+      g.fillStyle(col, 0.22); g.fillCircle(hx, hy, 18);
+      g.fillStyle(col, 0.55); g.fillCircle(hx, hy, 8);
+      g.fillStyle(WHITE, 0.95); g.fillCircle(hx, hy, 3.5);
+    }
+  }
+
+  private syncNeonText(t: number) {
+    // Neon glow breathes in step with the ring so the text reads as part of the same light
+    const pulse = 0.5 + 0.5 * Math.sin(t * 2.2);
+    const shimmer = 0.88 + 0.12 * Math.sin(t * 9.0);
+    this.neonGlowLayers.forEach(l => l.obj.setAlpha(l.base * (0.45 + pulse * 1.05) * shimmer));
+    // Gentle breathing of the crisp cores keeps the letters alive without drifting
+    const cs = 1 + pulse * 0.022;
+    this.neonCores.forEach(c => c.setScale(cs));
   }
 
   // ── Bottom navigation ─────────────────────────────────────────────
@@ -914,52 +1012,78 @@ export class GameScene extends Phaser.Scene {
       .setDepth(52).setAlpha(0).setScale(0.6);
 
     const CRW = Math.round(this.gw * 0.234);
-    const CRH = Math.round(CRW * 1.29);
-    const CR = 22;
+    const imgKey = `card_${pair.result}`;
 
-    const g = this.add.graphics();
+    if (this.textures.exists(imgKey)) {
+      // ── Designed result-card image (preserves the asset's own aspect ratio) ──
+      const tex = this.textures.get(imgKey).getSourceImage() as { width: number; height: number };
+      const CRH = Math.round(CRW * (tex.height / tex.width));
 
-    g.fillStyle(0x000000, 0.35);
-    g.fillRoundedRect(-CRW / 2 + 6, -CRH / 2 + 10, CRW, CRH, CR);
+      // Soft drop shadow behind the card
+      const shadow = this.add.graphics();
+      shadow.fillStyle(0x000000, 0.35);
+      shadow.fillRoundedRect(-CRW / 2 + 6, -CRH / 2 + 10, CRW, CRH, 22);
 
-    g.fillGradientStyle(0x1A0D00, 0x1A0D00, 0x2A1800, 0x2A1800, 1);
-    g.fillRoundedRect(-CRW / 2, -CRH / 2, CRW, CRH, CR);
+      const cardImg = this.add.image(0, 0, imgKey).setDisplaySize(CRW, CRH);
 
-    g.lineStyle(4, 0xFFD700, 0.95);
-    g.strokeRoundedRect(-CRW / 2, -CRH / 2, CRW, CRH, CR);
-    g.lineStyle(1.5, 0xFFD700, 0.3);
-    g.strokeRoundedRect(-CRW / 2 + 8, -CRH / 2 + 8, CRW - 16, CRH - 16, CR - 4);
+      // "NEW!" unlock badge overlaid on the top-left
+      const bg = this.add.graphics();
+      bg.fillStyle(0xFF4400, 1);
+      bg.fillRoundedRect(-CRW / 2 + 10, -CRH / 2 + 10, 64, 28, 10);
+      const newBadge = this.add.text(-CRW / 2 + 42, -CRH / 2 + 24, 'NEW!', {
+        fontFamily: 'Baloo 2', fontSize: '16px', color: '#FFFFFF', fontStyle: 'bold',
+      }).setOrigin(0.5);
 
-    g.fillStyle(0xFFD700, 0.08);
-    g.fillRoundedRect(-CRW / 2 + 10, -CRH / 2 + 10, CRW - 20, CRH * 0.58,
-      { tl: CR - 4, tr: CR - 4, bl: 0, br: 0 });
+      cont.add([shadow, cardImg, bg, newBadge]);
+    } else {
+      // ── Fallback: drawn gold card with emoji (result image not uploaded yet) ──
+      const CRH = Math.round(CRW * 1.29);
+      const CR = 22;
 
-    g.fillStyle(0xFF4400, 1);
-    g.fillRoundedRect(-CRW / 2 + 10, -CRH / 2 + 10, 64, 28, 10);
+      const g = this.add.graphics();
 
-    const newBadge = this.add.text(-CRW / 2 + 42, -CRH / 2 + 24, 'NEW!', {
-      fontFamily: 'Baloo 2', fontSize: '16px', color: '#FFFFFF', fontStyle: 'bold',
-    }).setOrigin(0.5);
+      g.fillStyle(0x000000, 0.35);
+      g.fillRoundedRect(-CRW / 2 + 6, -CRH / 2 + 10, CRW, CRH, CR);
 
-    const iconFs = Math.round(CRH * 0.27);
-    const iconText = this.add.text(0, -CRH / 2 + CRH * 0.31, pair.iconResult, {
-      fontSize: `${iconFs}px`,
-    }).setOrigin(0.5);
+      g.fillGradientStyle(0x1A0D00, 0x1A0D00, 0x2A1800, 0x2A1800, 1);
+      g.fillRoundedRect(-CRW / 2, -CRH / 2, CRW, CRH, CR);
 
-    g.lineStyle(1.5, 0xFFD700, 0.3);
-    g.lineBetween(-CRW / 2 + 20, -CRH / 2 + CRH * 0.6, CRW / 2 - 20, -CRH / 2 + CRH * 0.6);
+      g.lineStyle(4, 0xFFD700, 0.95);
+      g.strokeRoundedRect(-CRW / 2, -CRH / 2, CRW, CRH, CR);
+      g.lineStyle(1.5, 0xFFD700, 0.3);
+      g.strokeRoundedRect(-CRW / 2 + 8, -CRH / 2 + 8, CRW - 16, CRH - 16, CR - 4);
 
-    const wordFs = Math.round(CRH * 0.115);
-    const wordText = this.add.text(0, -CRH / 2 + CRH * 0.73, pair.result.toUpperCase(), {
-      fontFamily: 'Baloo 2', fontSize: `${wordFs}px`, color: '#FFD700', fontStyle: 'bold',
-      shadow: { offsetX: 2, offsetY: 3, color: '#000000', blur: 8, fill: true },
-    }).setOrigin(0.5);
+      g.fillStyle(0xFFD700, 0.08);
+      g.fillRoundedRect(-CRW / 2 + 10, -CRH / 2 + 10, CRW - 20, CRH * 0.58,
+        { tl: CR - 4, tr: CR - 4, bl: 0, br: 0 });
 
-    const pronText = this.add.text(0, -CRH / 2 + CRH * 0.87, pair.pron, {
-      fontFamily: 'Noto Sans KR', fontSize: `${Math.round(CRH * 0.06)}px`, color: '#AA9966',
-    }).setOrigin(0.5);
+      g.fillStyle(0xFF4400, 1);
+      g.fillRoundedRect(-CRW / 2 + 10, -CRH / 2 + 10, 64, 28, 10);
 
-    cont.add([g, newBadge, iconText, wordText, pronText]);
+      const newBadge = this.add.text(-CRW / 2 + 42, -CRH / 2 + 24, 'NEW!', {
+        fontFamily: 'Baloo 2', fontSize: '16px', color: '#FFFFFF', fontStyle: 'bold',
+      }).setOrigin(0.5);
+
+      const iconFs = Math.round(CRH * 0.27);
+      const iconText = this.add.text(0, -CRH / 2 + CRH * 0.31, pair.iconResult, {
+        fontSize: `${iconFs}px`,
+      }).setOrigin(0.5);
+
+      g.lineStyle(1.5, 0xFFD700, 0.3);
+      g.lineBetween(-CRW / 2 + 20, -CRH / 2 + CRH * 0.6, CRW / 2 - 20, -CRH / 2 + CRH * 0.6);
+
+      const wordFs = Math.round(CRH * 0.115);
+      const wordText = this.add.text(0, -CRH / 2 + CRH * 0.73, pair.result.toUpperCase(), {
+        fontFamily: 'Baloo 2', fontSize: `${wordFs}px`, color: '#FFD700', fontStyle: 'bold',
+        shadow: { offsetX: 2, offsetY: 3, color: '#000000', blur: 8, fill: true },
+      }).setOrigin(0.5);
+
+      const pronText = this.add.text(0, -CRH / 2 + CRH * 0.87, pair.pron, {
+        fontFamily: 'Noto Sans KR', fontSize: `${Math.round(CRH * 0.06)}px`, color: '#AA9966',
+      }).setOrigin(0.5);
+
+      cont.add([g, newBadge, iconText, wordText, pronText]);
+    }
 
     this.tweens.add({
       targets: cont,
