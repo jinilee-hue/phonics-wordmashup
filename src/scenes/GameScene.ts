@@ -98,7 +98,7 @@ export class GameScene extends Phaser.Scene {
     this.gh = this.scale.height;
     this.cx = Math.round(this.gw / 2);
     this.cy = Math.round(this.gh * 0.44);
-    this.zoneR   = Math.round(Math.min(this.gw, this.gh) * 0.15);
+    this.zoneR   = Math.round(Math.min(this.gw, this.gh) * 0.19);
     this.snapOff = Math.round(this.zoneR * 0.65);
 
     this.queue = pickRoundPairs(ROUNDS);
