@@ -1422,7 +1422,7 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(80,  () => this.bumpBadge(this.coinText));
     this.time.delayedCall(160, () => this.bumpBadge(this.gemText));
 
-    const reward = this.add.text(CX + 80, CY - 60, '+10 ⭐', {
+    const reward = this.add.text(CX + 80, CY - 60, '+10', {
       fontFamily: 'Baloo 2', fontSize: '28px', color: '#FFD700', fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(60).setAlpha(0);
     this.tweens.add({
