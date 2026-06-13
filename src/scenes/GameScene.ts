@@ -170,6 +170,17 @@ export class GameScene extends Phaser.Scene {
       rg.destroy();
     }
 
+    // ── 'softGlow' — soft radial white glow for the card-reveal flare ──
+    if (!this.textures.exists('softGlow')) {
+      const sg = this.make.graphics({ x: 0, y: 0 }, false);
+      for (let r = 64; r > 0; r -= 2) {
+        sg.fillStyle(0xffffff, 0.05);
+        sg.fillCircle(64, 64, r);
+      }
+      sg.generateTexture('softGlow', 128, 128);
+      sg.destroy();
+    }
+
     // ── 'cloudPuff' — a fluffy white cloud blob (cluster of soft circles) ──
     if (!this.textures.exists('cloudPuff')) {
       const cg = this.make.graphics({ x: 0, y: 0 }, false);
@@ -1174,23 +1185,25 @@ export class GameScene extends Phaser.Scene {
     const rx = CX + 20;
     const ry = CY - 10;
 
-    const cont = this.add.container(rx, ry - 80)
-      .setDepth(52).setAlpha(0).setScale(0.6);
+    const cont = this.add.container(rx, ry - 60)
+      .setDepth(52).setAlpha(0);
+    cont.scaleX = 0.02; cont.scaleY = 0.5;   // start edge-on for the flip-in
 
     const CRW = Math.round(this.gw * 0.234);
     const imgKey = `card_${pair.result}`;
+    let CRH: number;
 
     if (this.textures.exists(imgKey)) {
       // ── Designed result-card image (preserves the asset's own aspect ratio) ──
       const tex = this.textures.get(imgKey).getSourceImage() as { width: number; height: number };
-      const CRH = Math.round(CRW * (tex.height / tex.width));
+      CRH = Math.round(CRW * (tex.height / tex.width));
 
       const cardImg = this.add.image(0, 0, imgKey).setDisplaySize(CRW, CRH);
 
       cont.add([cardImg]);
     } else {
       // ── Fallback: drawn gold card with emoji (result image not uploaded yet) ──
-      const CRH = Math.round(CRW * 1.29);
+      CRH = Math.round(CRW * 1.29);
       const CR = 22;
 
       const g = this.add.graphics();
@@ -1231,6 +1244,10 @@ export class GameScene extends Phaser.Scene {
       cont.add([g, iconText, wordText, pronText]);
     }
 
+    // Radiant glow flare + sunburst spokes behind the card, plus sparkle ring
+    this.playCardReveal(rx, ry, CRW, CRH);
+
+    // Flip / pop entrance (card unfolds edge-on then settles with overshoot)
     this.tweens.add({
       targets: cont,
       y: ry, alpha: 1, scaleX: 1, scaleY: 1,
@@ -1238,6 +1255,7 @@ export class GameScene extends Phaser.Scene {
       onComplete: () => {
         this.burst.setPosition(rx, ry);
         this.burst.explode(40);
+        this.playShineSweep(rx, ry, CRW, CRH);   // light sweeps across the face
         this.onRoundWin(cont);
       },
     });
@@ -1247,6 +1265,113 @@ export class GameScene extends Phaser.Scene {
       scaleX: 1.03, scaleY: 1.03,
       duration: 900, ease: 'Sine.easeInOut',
       yoyo: true, repeat: -1, delay: 600,
+    });
+  }
+
+  // ── Card-reveal flair: glow flare + sunburst spokes + sparkle ring ──
+
+  private playCardReveal(rx: number, ry: number, CRW: number, CRH: number) {
+    const GOLD = 0xFFCB45;
+
+    // Soft warm halo behind the card (normal blend so it reads on the bright scene)
+    const glow = this.add.image(rx, ry, 'softGlow')
+      .setTint(0xFFE9A0)
+      .setDepth(50).setAlpha(0).setDisplaySize(CRW * 0.6, CRW * 0.6);
+    this.tweens.add({
+      targets: glow, alpha: 0.7,
+      displayWidth: CRW * 2.6, displayHeight: CRW * 2.6,
+      duration: 300, ease: 'Cubic.easeOut',
+      onComplete: () => this.tweens.add({
+        targets: glow, alpha: 0,
+        displayWidth: CRW * 3.0, displayHeight: CRW * 3.0,
+        duration: 620, ease: 'Cubic.easeIn',
+        onComplete: () => glow.destroy(),
+      }),
+    });
+
+    // Sunburst spokes peeking out from behind the card, rotating slowly
+    const spokes = this.add.container(rx, ry).setDepth(51).setAlpha(0).setScale(0.5);
+    const SPOKES = 14;
+    for (let i = 0; i < SPOKES; i++) {
+      const long = i % 2 === 0;
+      const ray = this.add.image(0, 0, 'ray')
+        .setOrigin(0.5, 1)
+        .setAngle((i / SPOKES) * 360)
+        .setTint(GOLD)
+        .setDisplaySize(CRW * (long ? 0.055 : 0.035), CRH * (long ? 1.4 : 1.12));
+      spokes.add(ray);
+    }
+    this.tweens.add({
+      targets: spokes, alpha: 0.8, scaleX: 1.12, scaleY: 1.12,
+      duration: 300, ease: 'Cubic.easeOut',
+      onComplete: () => this.tweens.add({
+        targets: spokes, alpha: 0, scaleX: 1.3, scaleY: 1.3,
+        duration: 640, ease: 'Cubic.easeIn',
+        onComplete: () => spokes.destroy(),
+      }),
+    });
+    this.tweens.add({ targets: spokes, rotation: 0.45, duration: 1000, ease: 'Sine.easeOut' });
+
+    // Sparkle ring — bright twinkles popping around the card edge
+    const SPARKS = 18;
+    for (let i = 0; i < SPARKS; i++) {
+      const ang = (i / SPARKS) * Math.PI * 2 + Phaser.Math.FloatBetween(-0.15, 0.15);
+      const rr = CRW * Phaser.Math.FloatBetween(0.58, 0.78);
+      const sx = rx + Math.cos(ang) * rr;
+      const sy = ry + Math.sin(ang) * rr * (CRH / CRW);
+      const spark = this.add.image(sx, sy, 'pDot')
+        .setTint(i % 3 === 0 ? 0xFFFFFF : 0xFFC400)
+        .setDepth(60).setAlpha(0).setScale(0.2);
+      this.tweens.add({
+        targets: spark, alpha: 1, scaleX: 1.0, scaleY: 1.0,
+        x: rx + Math.cos(ang) * rr * 1.28,
+        y: ry + Math.sin(ang) * rr * 1.28 * (CRH / CRW),
+        duration: 300, ease: 'Cubic.easeOut', delay: 100 + i * 12,
+        onComplete: () => this.tweens.add({
+          targets: spark, alpha: 0, scaleX: 0, scaleY: 0,
+          duration: 360, ease: 'Cubic.easeIn',
+          onComplete: () => spark.destroy(),
+        }),
+      });
+    }
+  }
+
+  // ── Specular shine sweeping diagonally across the card face ──
+
+  private playShineSweep(rx: number, ry: number, CRW: number, CRH: number) {
+    const radius = Math.round(CRW * 0.08);
+    // Geometry mask shaped like the card so the shine stays on the face
+    const maskG = this.make.graphics({ x: 0, y: 0 }, false);
+    maskG.fillStyle(0xffffff, 1);
+    maskG.fillRoundedRect(rx - CRW / 2, ry - CRH / 2, CRW, CRH, radius);
+    const mask = maskG.createGeometryMask();
+
+    const shine = this.add.graphics().setDepth(53);
+    shine.setMask(mask);
+
+    const skew = CRH * 0.35;
+    const left = rx - CRW / 2;
+    this.tweens.add({
+      targets: { p: -0.4 },
+      p: 1.4,
+      duration: 560, ease: 'Sine.easeInOut',
+      onUpdate: (tw) => {
+        const p = (tw.targets[0] as { p: number }).p;
+        const bx = left + p * CRW;
+        shine.clear();
+        const band = (w: number, a: number) => {
+          shine.fillStyle(0xffffff, a);
+          shine.fillPoints([
+            new Phaser.Geom.Point(bx, ry - CRH / 2),
+            new Phaser.Geom.Point(bx + w, ry - CRH / 2),
+            new Phaser.Geom.Point(bx + w - skew, ry + CRH / 2),
+            new Phaser.Geom.Point(bx - skew, ry + CRH / 2),
+          ], true);
+        };
+        band(CRW * 0.34, 0.30);   // soft wide halo
+        band(CRW * 0.12, 0.85);   // bright glossy core
+      },
+      onComplete: () => { shine.destroy(); mask.destroy(); maskG.destroy(); },
     });
   }
 
