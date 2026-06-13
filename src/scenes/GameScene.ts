@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { WordCard, CARD_W } from '../objects/WordCard';
 import { pickRoundPairs, COMPOUND_PAIRS, type CompoundPair } from '../data/compounds';
+import { gameAudio } from '../audio';
 
 const ROUNDS = 6;
 
@@ -107,6 +108,12 @@ export class GameScene extends Phaser.Scene {
     this.coins = 0;
     this.gems  = 0;
     this.busy = false;
+
+    // Audio — keep the user's toggle choices across restarts, and unlock +
+    // start the calm BGM on the first interaction (browser autoplay policy).
+    this.bgmOn = gameAudio.bgmOn;
+    this.sfxOn = gameAudio.sfxOn;
+    this.input.once('pointerdown', () => { gameAudio.unlock(); gameAudio.startBgm(); });
 
     // Pointer cursor on hover for all interactive objects
     this.input.on('gameobjectover', () => { this.game.canvas.style.cursor = 'pointer'; });
@@ -439,8 +446,8 @@ export class GameScene extends Phaser.Scene {
       container.add([label, trackBg, knob, hit]);
     };
 
-    makeToggle('배경음악 (BGM)', -sz(30), () => this.bgmOn, () => { this.bgmOn = !this.bgmOn; });
-    makeToggle('효과음 (SFX)',   sz(40),  () => this.sfxOn, () => { this.sfxOn = !this.sfxOn; });
+    makeToggle('배경음악 (BGM)', -sz(30), () => this.bgmOn, () => { this.bgmOn = !this.bgmOn; gameAudio.unlock(); gameAudio.startBgm(); gameAudio.setBgmEnabled(this.bgmOn); });
+    makeToggle('효과음 (SFX)',   sz(40),  () => this.sfxOn, () => { this.sfxOn = !this.sfxOn; gameAudio.sfxOn = this.sfxOn; });
 
     // Close button
     const closeBtnY = panelH / 2 - sz(44);
@@ -1023,6 +1030,7 @@ export class GameScene extends Phaser.Scene {
 
     this.cameras.main.flash(200, 255, 255, 255, false);
     this.cameras.main.shake(280, 0.012);
+    gameAudio.playBurst();   // sparkle SFX as the particles burst
 
     // Background pink/blue fluorescent lights rising up from the zone
     this.playRisingLights(CX, CY);
