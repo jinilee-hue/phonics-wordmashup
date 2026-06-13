@@ -1523,10 +1523,10 @@ export class GameScene extends Phaser.Scene {
 
     // ── LEFT page: this run's collected word cards (2 × 3) ──────────
     const made = this.queue.slice(0, ROUNDS).map(p => p.result);
-    const lCols = 2, lRows = 3;
+    const lCols = 3, lRows = 2;
     const gL = pageX + pad, gR = -centerGap - pad;
     const cW = (gR - gL) / lCols, cH = (contentBottom - contentTop) / lRows;
-    const cardH = Math.min(cH * 0.9, cW * 0.84 * 1.21);
+    const cardH = Math.min(cH * 0.9, cW * 0.86 * 1.21);
     const cardW = cardH / 1.21;
     const slots = this.add.graphics();
     book.add(slots);
