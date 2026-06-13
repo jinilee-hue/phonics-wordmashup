@@ -1568,73 +1568,57 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
-    // ── RIGHT page: overall collection progress (persisted) ─────────
-    const TOTAL = COMPOUND_PAIRS.length;
-    let prevList: string[] = [];
-    try { prevList = JSON.parse(localStorage.getItem('cb_collected') || '[]'); } catch { /* ignore */ }
-    const validResults = new Set(COMPOUND_PAIRS.map(p => p.result));
-    const prevSet = new Set(prevList.filter(w => validResults.has(w)));
-    const set = new Set(prevSet);
-    made.forEach(w => set.add(w));
-    try { localStorage.setItem('cb_collected', JSON.stringify([...set])); } catch { /* ignore */ }
-    const prevCount = Math.min(prevSet.size, TOTAL);
-    const collected = Math.min(set.size, TOTAL);
-
+    // ── RIGHT page: level roadmap (winding path of numbered stages) ──
     const rL = centerGap + pad, rR = pageX + pageFullW - pad;
     const rCX = (rL + rR) / 2, rW = rR - rL;
 
-    const heading = this.add.text(rCX, contentTop + bookH * 0.02, 'Collection', {
-      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.07)}px`,
+    const heading = this.add.text(rCX, contentTop + bookH * 0.015, 'Stage Map', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.062)}px`,
       color: '#5A2E94', fontStyle: 'bold',
     }).setOrigin(0.5);
     book.add(heading);
 
-    const countText = this.add.text(rCX, contentTop + bookH * 0.14, `${prevCount} / ${TOTAL}`, {
-      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.11)}px`,
-      color: '#8A43D6', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    book.add(countText);
+    const N = ROUNDS;
+    const mapTop = contentTop + bookH * 0.08;
+    const rowH = (contentBottom - mapTop) / N;
+    const leftX = rL + rW * 0.26;
+    const rightX = rR - rW * 0.26;
+    const nodeR = Math.min(rowH * 0.42, rW * 0.18);
+    const nodeX = (i: number) => (i % 2 === 0 ? leftX : rightX);
+    const nodeY = (i: number) => mapTop + rowH * (i + 0.5);
 
-    // progress bar
-    const barW = rW * 0.86, barH = Math.round(bookH * 0.035);
-    const barX = rCX - barW / 2, barY = contentTop + bookH * 0.22;
-    const barBg = this.add.graphics(); book.add(barBg);
-    barBg.fillStyle(0x6B49A8, 0.22); barBg.fillRoundedRect(barX, barY, barW, barH, barH / 2);
-    const barFill = this.add.graphics(); book.add(barFill);
-
-    // 30-word collection dot grid (6 × 5) — filled = collected
-    const dCols = 6, dRows = 5;
-    const dTop = contentTop + bookH * 0.30;
-    const dW = rW / dCols, dH = (contentBottom - dTop) / dRows;
-    const dotR = Math.min(dW, dH) * 0.3;
-    const dotsG = this.add.graphics(); book.add(dotsG);
-    COMPOUND_PAIRS.forEach((p, i) => {
-      const col = i % dCols, row = Math.floor(i / dCols);
-      const dx = rL + dW * (col + 0.5);
-      const dy = dTop + dH * (row + 0.5);
-      if (set.has(p.result)) {
-        dotsG.fillStyle(0x8A43D6, 1); dotsG.fillCircle(dx, dy, dotR);
-        dotsG.fillStyle(0xFFFFFF, 0.5); dotsG.fillCircle(dx - dotR * 0.3, dy - dotR * 0.3, dotR * 0.32);
-      } else {
-        dotsG.fillStyle(0x6B49A8, 0.14); dotsG.fillCircle(dx, dy, dotR);
-        dotsG.lineStyle(1.5, 0x6B49A8, 0.3); dotsG.strokeCircle(dx, dy, dotR);
+    // winding dotted path connecting the stages (drawn behind the nodes)
+    const pathG = this.add.graphics();
+    book.add(pathG);
+    pathG.fillStyle(0x8A43D6, 0.45);
+    for (let i = 0; i < N - 1; i++) {
+      const x1 = nodeX(i), y1 = nodeY(i), x2 = nodeX(i + 1), y2 = nodeY(i + 1);
+      const steps = 8;
+      for (let k = 1; k < steps; k++) {
+        const t = k / steps;
+        pathG.fillCircle(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, Math.max(2, nodeR * 0.12));
       }
-    });
+    }
 
-    // animate count + bar fill up to the new total
-    const prog = { v: prevCount };
-    const drawBar = () => {
-      barFill.clear();
-      const fw = Math.max(0, Math.round(barW * (prog.v / TOTAL)));
-      if (fw > 2) { barFill.fillStyle(0xC9A0FF, 1); barFill.fillRoundedRect(barX, barY, fw, barH, barH / 2); }
-    };
-    drawBar();
-    this.tweens.add({
-      targets: prog, v: collected, duration: 800, ease: 'Cubic.easeOut',
-      delay: 360 + ROUNDS * 140,
-      onUpdate: () => { drawBar(); countText.setText(`${Math.round(prog.v)} / ${TOTAL}`); },
-      onComplete: () => { countText.setText(`${collected} / ${TOTAL}`); },
-    });
+    // numbered stage nodes — all completed this run; the last one highlighted
+    for (let i = 0; i < N; i++) {
+      const isLast = i === N - 1;
+      const node = this.add.container(nodeX(i), nodeY(i)).setScale(0).setAlpha(0);
+      const ng = this.add.graphics();
+      ng.fillStyle(isLast ? 0xFFC83A : 0xFFFFFF, 1); ng.fillCircle(0, 0, nodeR);
+      ng.fillStyle(0x8A43D6, 1); ng.fillCircle(0, 0, nodeR * 0.82);
+      ng.fillStyle(0xFFFFFF, 0.25); ng.fillCircle(-nodeR * 0.26, -nodeR * 0.3, nodeR * 0.3);
+      const num = this.add.text(0, 0, `${i + 1}`, {
+        fontFamily: '"Baloo 2"', fontSize: `${Math.round(nodeR * 0.95)}px`,
+        color: '#FFFFFF', fontStyle: 'bold',
+      }).setOrigin(0.5);
+      node.add([ng, num]);
+      book.add(node);
+      this.tweens.add({
+        targets: node, scaleX: 1, scaleY: 1, alpha: 1,
+        duration: 300, ease: 'Back.easeOut', delay: 360 + i * 130,
+      });
+    }
 
     // Book entrance
     this.tweens.add({ targets: book, alpha: 1, scaleX: 1, scaleY: 1, duration: 360, ease: 'Back.easeOut' });
