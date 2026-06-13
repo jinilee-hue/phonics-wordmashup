@@ -38,7 +38,7 @@ function runIntro(onComplete: () => void) {
 
   // ── SKIP / START button ─────────────────────────────────────────
   const skipBtn = document.createElement('button');
-  skipBtn.textContent = 'SKIP ▶';
+  skipBtn.textContent = 'SKIP';
 
   const skipBaseStyle = [
     'position:absolute',
@@ -94,7 +94,7 @@ function runIntro(onComplete: () => void) {
   // Video ends → change to START
   video.addEventListener('ended', () => {
     isStartMode = true;
-    skipBtn.textContent = '▶  START';
+    skipBtn.textContent = 'START';
     skipBtn.style.background = 'rgba(255,255,255,0.2)';
     skipBtn.style.border = '2px solid rgba(255,255,255,0.7)';
     skipBtn.style.color = '#ffffff';
