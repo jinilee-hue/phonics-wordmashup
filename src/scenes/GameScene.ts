@@ -302,8 +302,8 @@ export class GameScene extends Phaser.Scene {
     const bSz = sz(62);
     const backImg = this.add.image(p(14) + bSz / 2, q(13) + bSz / 2, 'btn_back_main').setDisplaySize(bSz, bSz).setDepth(51);
 
-    // Book icon centered on pill
-    this.add.image(p(98 + 23), q(13) + sz(29), 'icon_book').setDisplaySize(sz(46), sz(50)).setDepth(53);
+    // Book icon centered on pill (pillCY = q(13)+sz(31))
+    this.add.image(p(98 + 23), q(13) + sz(31), 'icon_book').setDisplaySize(sz(46), sz(50)).setDepth(53);
 
     // Back button hit zone (invisible)
     const hitG = this.add.graphics().setDepth(55).setAlpha(0.001);
@@ -315,24 +315,24 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
     });
 
-    // ── Progress bar pill — height matches back/settings button (sz-based) ─
-    const pillW = p(241), pillH = sz(58);
-    const pillTop = q(13), pillCY = pillTop + Math.round(pillH / 2);
-    this.add.image(p(88) + pillW / 2, pillCY + sz(4), 'hud_bar_main').setDisplaySize(pillW, pillH).setDepth(50);
+    // ── Progress bar pill — exact same height as back/settings button: sz(62) ─
+    const pillW = p(241), pillH = sz(62);
+    const pillTop = q(13), pillCY = pillTop + sz(31);
+    this.add.image(p(88) + pillW / 2, pillCY + sz(3), 'hud_bar_main').setDisplaySize(pillW, pillH).setDepth(50);
     this.add.image(p(88) + pillW / 2, pillCY,          'hud_bar_pill').setDisplaySize(pillW, pillH).setDepth(51);
 
-    // Track inner — proportionally placed inside pill
-    const tX = p(151), tY = pillTop + sz(27), tW = p(160), tH = sz(24);
+    // Track inner — lower half of pill
+    const tX = p(151), tY = pillTop + sz(33), tW = p(160), tH = sz(24);
     const trackG = this.add.graphics().setDepth(52);
     trackG.fillStyle(0x382a65, 1);
     trackG.fillRoundedRect(tX, tY, tW, tH, sz(12));
 
-    this.hudTrackX = p(153); this.hudTrackY = pillTop + sz(29);
+    this.hudTrackX = p(153); this.hudTrackY = pillTop + sz(35);
     this.hudTrackW = p(156); this.hudTrackH = sz(20);
     this.progressFill = this.add.graphics().setDepth(53);
 
-    // "Compound Book" label
-    this.add.text(p(164), pillTop + sz(6), 'Compound Book', {
+    // "Compound Book" label — upper portion of pill
+    this.add.text(p(164), pillTop + sz(7), 'Compound Book', {
       fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(16)}px`,
       color: '#FFFFFF', fontStyle: 'bold',
     }).setDepth(52);
@@ -361,13 +361,13 @@ export class GameScene extends Phaser.Scene {
       { bL: 860,  bgKey: 'badge_coin_main', iconKey: 'icon_money', iCX: 893,   numRX: 967,  plusCX: 997,  kind: 'coin'  },
       { bL: 1032, bgKey: 'badge_coin_main', iconKey: 'icon_gem',   iCX: 1067.5,numRX: 1139, plusCX: 1169, kind: 'gem'   },
     ];
-    const bW = p(152), bH = sz(58);
-    const ibH = sz(40);
-    const bTop = q(13), bCY = bTop + Math.round(bH / 2);
+    const bW = p(152), bH = sz(62);
+    const ibH = sz(44);
+    const bTop = q(13), bCY = bTop + sz(31);
 
     badges.forEach(cfg => {
       const bx = p(cfg.bL);
-      this.add.image(bx + bW / 2, bCY + sz(4), 'badge_shadow').setDisplaySize(bW, bH).setDepth(50);
+      this.add.image(bx + bW / 2, bCY + sz(3), 'badge_shadow').setDisplaySize(bW, bH).setDepth(50);
       this.add.image(bx + bW / 2, bCY,          cfg.bgKey    ).setDisplaySize(bW, bH).setDepth(51);
       const ibL = bx + p(27), ibT = bTop + sz(9), ibW = p(110);
       const ibG = this.add.graphics().setDepth(52);
@@ -375,7 +375,7 @@ export class GameScene extends Phaser.Scene {
       ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(12));
       const iconSz = sz(40);
       this.add.image(bx + sz(10) + iconSz / 2, bCY, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53);
-      const numTxt = this.add.text(p(cfg.numRX), bTop + sz(16), '0', {
+      const numTxt = this.add.text(p(cfg.numRX), bTop + sz(18), '0', {
         fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(24)}px`,
         color: '#FFFFFF', fontStyle: 'bold',
       }).setOrigin(1, 0).setDepth(53);
