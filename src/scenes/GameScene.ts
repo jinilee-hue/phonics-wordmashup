@@ -231,13 +231,29 @@ export class GameScene extends Phaser.Scene {
       cg.destroy();
     }
 
-    // ── 'icon_play_tri' — right-pointing play triangle for Next Play button ──
+    // ── 'icon_play_tri' — rounded-corner play triangle (canvas arcTo) ──
     if (!this.textures.exists('icon_play_tri')) {
-      const pg = this.make.graphics({ x: 0, y: 0 }, false);
-      pg.fillStyle(0xffffff, 1);
-      pg.fillTriangle(8, 6, 8, 42, 42, 24);
-      pg.generateTexture('icon_play_tri', 48, 48);
-      pg.destroy();
+      const sz = 48;
+      const cvs = this.textures.createCanvas('icon_play_tri', sz, sz) as Phaser.Textures.CanvasTexture;
+      const tc = cvs.getContext();
+      tc.clearRect(0, 0, sz, sz);
+      tc.fillStyle = '#FFFFFF';
+      const cx = sz / 2, cy = sz / 2;
+      const outerR  = sz * 0.42;  // circumscribed-circle radius
+      const cornerR = sz * 0.16;  // corner rounding amount
+      // Vertices: right-pointing triangle at -30°, 90°, 210°
+      const pts = [-30, 90, 210].map(deg => ({
+        x: cx + outerR * Math.cos(deg * Math.PI / 180),
+        y: cy + outerR * Math.sin(deg * Math.PI / 180),
+      }));
+      tc.beginPath();
+      tc.moveTo((pts[2].x + pts[0].x) / 2, (pts[2].y + pts[0].y) / 2);
+      for (let i = 0; i < 3; i++) {
+        tc.arcTo(pts[i].x, pts[i].y, pts[(i + 1) % 3].x, pts[(i + 1) % 3].y, cornerR);
+      }
+      tc.closePath();
+      tc.fill();
+      cvs.refresh();
     }
 
     this.burst = this.add.particles(this.cx, this.cy, 'pDot', {
