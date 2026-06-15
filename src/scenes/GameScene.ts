@@ -365,12 +365,11 @@ export class GameScene extends Phaser.Scene {
     });
 
     // ── Currency badges ───────────────────────────────────────────
-    // Each badge: left, badge-bg key, icon key, icon center X (Figma), numRight X, plus center X
-    type BadgeCfg = { bL: number; bgKey: string; iconKey: string; iCX: number; numRX: number; plusCX: number; kind: 'score' | 'coin' | 'gem' };
+    type BadgeCfg = { bL: number; bgKey: string; iconKey: string; kind: 'score' | 'coin' | 'gem' };
     const badges: BadgeCfg[] = [
-      { bL: 688,  bgKey: 'badge_star_main', iconKey: 'icon_star',  iCX: 724.5, numRX: 795,  plusCX: 825,  kind: 'score' },
-      { bL: 860,  bgKey: 'badge_coin_main', iconKey: 'icon_money', iCX: 893,   numRX: 967,  plusCX: 997,  kind: 'coin'  },
-      { bL: 1032, bgKey: 'badge_coin_main', iconKey: 'icon_gem',   iCX: 1067.5,numRX: 1139, plusCX: 1169, kind: 'gem'   },
+      { bL: 688,  bgKey: 'badge_star_main', iconKey: 'icon_star',  kind: 'score' },
+      { bL: 848,  bgKey: 'badge_coin_main', iconKey: 'icon_money', kind: 'coin'  },
+      { bL: 1008, bgKey: 'badge_coin_main', iconKey: 'icon_gem',   kind: 'gem'   },
     ];
     // bW=sz(152) uniform scaling matches bH=sz(53) so aspect ratio holds at any screen size
     const bW = sz(152), bH = sz(53);
@@ -388,14 +387,13 @@ export class GameScene extends Phaser.Scene {
       badgeShadow.fillRoundedRect(bx + sz(1), bTop + sz(4), bW, bH, sz(15));
 
       this.add.image(bx + bW / 2, bCY, cfg.bgKey).setDisplaySize(bW, bH).setDepth(51);
-      // Inner dark bar (number display area)
-      const ibL = bx + sz(27), ibT = bTop + sz(8), ibW = sz(110);
+      // Dark bar spans from under icon to just before the + button
+      const ibL = bx + sz(27), ibT = bTop + sz(8), ibW = bW - sz(61);
       const ibG = this.add.graphics().setDepth(52);
       ibG.fillStyle(0x426295, 1);
       ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(10));
       const iconSz = sz(36);
       this.add.image(bx + sz(10) + iconSz / 2, bCY, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53);
-      // Offsets 107 and 137 from badge left edge (Figma: numRX=bL+107, plusCX=bL+137)
       const numTxt = this.add.text(bx + sz(107), bTop + sz(15), '0', {
         fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(22)}px`,
         color: '#FFFFFF', fontStyle: 'bold',
@@ -403,7 +401,8 @@ export class GameScene extends Phaser.Scene {
       if (cfg.kind === 'score') this.scoreText = numTxt;
       if (cfg.kind === 'coin')  this.coinText  = numTxt;
       if (cfg.kind === 'gem')   this.gemText   = numTxt;
-      this.add.image(bx + sz(137), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
+      // + button right-aligned: center 2px inset from badge right edge
+      this.add.image(bx + bW - sz(18), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
     });
   }
 
