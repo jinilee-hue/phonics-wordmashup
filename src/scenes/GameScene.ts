@@ -1653,7 +1653,12 @@ export class GameScene extends Phaser.Scene {
           if (this.textures.exists(key)) {
             const im = this.add.image(tx, ty, key).setDisplaySize(rCardW, rCardH);
             im.setTint(0x888888).setAlpha(0.4);
-            pgCont.add(im);
+            const qTxt = this.add.text(tx, ty, '?', {
+              fontFamily: '"Baloo 2"', fontSize: `${Math.round(rCardH * 0.38)}px`,
+              color: '#FFFFFF', fontStyle: 'bold',
+              shadow: { offsetX: 0, offsetY: 2, color: 'rgba(0,0,0,0.3)', blur: 3, fill: true },
+            }).setOrigin(0.5).setAlpha(0.75);
+            pgCont.add([im, qTxt]);
           } else {
             // Fallback: grey slot
             const lo = this.add.graphics();
