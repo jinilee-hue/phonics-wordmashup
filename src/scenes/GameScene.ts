@@ -1106,7 +1106,9 @@ export class GameScene extends Phaser.Scene {
       { word: distract[3].word2, icon: distract[3].icon2 },
     ].sort(() => Math.random() - 0.5);
 
-    const CARD_SCALE = 0.972;
+    // Cards scale with the screen so the tap/drag area stays proportional at any resolution
+    const screenScale = Math.min(GW / 1280, GH / 720);
+    const CARD_SCALE = 0.972 * screenScale;
     // Figma-matched staggered positions (Figma canvas: 1280×720)
     // Values are card CENTER coordinates
     const pf = (fx: number) => Math.round(fx * GW / 1280);
@@ -1120,7 +1122,7 @@ export class GameScene extends Phaser.Scene {
     const makeCard = (figX: number, figY: number, angle: number, slotIdx: number, word: string, icon: string, side: 'left' | 'right') => {
       const targetX  = pf(figX);
       const targetY  = qf(figY);
-      const startX   = side === 'left' ? -CARD_W : GW + CARD_W;
+      const startX   = side === 'left' ? -CARD_W * screenScale : GW + CARD_W * screenScale;
       const leftKey  = `card_left_${word}`;
       const rightKey = `card_right_${word}`;
       const bgKey    = side === 'left'
