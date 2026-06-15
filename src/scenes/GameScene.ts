@@ -1724,7 +1724,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // ── Next Play button — nav_green style (same as in-game Mic button) ─
-    const bW = Math.round(s * 162 * 1.6);
+    const bW = Math.round(s * 202);
     const bH = Math.round(s * 62);
     const bCY = (bookCY + bookH / 2) + Math.round(GH * 0.08) + bH / 2;
     const shadowOff = Math.round(s * 4);
