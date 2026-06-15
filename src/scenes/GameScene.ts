@@ -46,6 +46,14 @@ export class GameScene extends Phaser.Scene {
   private settingsPanel?: Phaser.GameObjects.Container;
   private bgmOn = true;
   private sfxOn = true;
+  // Mic button refs for active-state visual
+  private micBtnLayers: Phaser.GameObjects.Image[] = [];
+  private micBtnIcon!: Phaser.GameObjects.Image;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private micRecognition: any = null;
+  private micRingTween?: Phaser.Tweens.Tween;
+  private micRing?: Phaser.GameObjects.Graphics;
+  private micIconTween?: Phaser.Tweens.Tween;
   private static readonly COLLECTED_KEY = 'phonics_collected_v1';
 
   constructor() { super({ key: 'Game' }); }
@@ -800,13 +808,15 @@ export class GameScene extends Phaser.Scene {
     });
 
     // ── Mic  (Figma left:473) ─────────────────────────────────────
-    const micImgs: Phaser.GameObjects.Image[] = [];
-    drawLayered(473, 162, 'nav_green_shadow', 'nav_green_main', 'nav_green_top');
-    const micIcon = this.add.image(0, navCY, 'icon_mic').setDisplaySize(sz(24), sz(34)).setDepth(43);
-    micImgs.push(micIcon);
-    centerInBtn(p(473 + 81), micIcon, sz(24), 'Mic');
+    const micX = p(473), micW = p(162);
+    this.add.image(micX + micW / 2, navCY + shadowOff, 'nav_green_shadow').setDisplaySize(micW, navH).setDepth(40);
+    const micMain = this.add.image(micX + micW / 2, navCY, 'nav_green_main').setDisplaySize(micW, navH).setDepth(41);
+    const micTop  = this.add.image(micX + micW / 2, navCY, 'nav_green_top' ).setDisplaySize(micW, navH).setDepth(42);
+    this.micBtnLayers = [micMain, micTop];
+    this.micBtnIcon = this.add.image(0, navCY, 'icon_mic').setDisplaySize(sz(24), sz(34)).setDepth(43);
+    centerInBtn(p(473 + 81), this.micBtnIcon, sz(24), 'Mic');
     makeHit(473, 162, () => {
-      btnPress(micImgs);
+      btnPress([this.micBtnIcon]);
       this.startMic();
     });
 
@@ -837,41 +847,102 @@ export class GameScene extends Phaser.Scene {
   }
 
   private startMic() {
+    // Toggle off if already listening
+    if (this.micRecognition) {
+      this.micRecognition.stop();
+      return;
+    }
+    if (this.busy) return;
+
     const SR = (window as unknown as Record<string, unknown>).SpeechRecognition
              || (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
     if (!SR) { this.showToast('이 브라우저는 음성 인식을 지원하지 않아요 😢'); return; }
 
     const { gw: GW, gh: GH } = this;
-    const s = Math.min(GW / 1280, GH / 720);
+    const s  = Math.min(GW / 1280, GH / 720);
     const sz = (f: number) => Math.round(f * s);
 
-    // Pulsing ring around mic button center
+    // ── Active visual ──────────────────────────────────────────────
+    this.micBtnLayers.forEach(l => l.setTint(0xbbffcc));
+    this.micBtnIcon.setTint(0x00ff66);
+    this.micIconTween = this.tweens.add({
+      targets: this.micBtnIcon,
+      scaleX: 1.25, scaleY: 1.25,
+      duration: 420, ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
+    });
+
+    // Pulsing ring around mic button
     const ringX = Math.round((473 + 81) * GW / 1280);
-    const ring = this.add.graphics().setDepth(46);
-    const ringTween = this.tweens.add({
-      targets: ring, alpha: { from: 0.8, to: 0 },
-      scaleX: { from: 1, to: 2.2 }, scaleY: { from: 1, to: 2.2 },
-      duration: 700, repeat: -1, ease: 'Sine.easeOut',
+    const ringY = Math.round(GH * 677 / 720);
+    const ring  = this.add.graphics().setDepth(46);
+    this.micRing = ring;
+    this.micRingTween = this.tweens.add({
+      targets: ring, alpha: { from: 0.85, to: 0 },
+      scaleX: { from: 1, to: 2.4 }, scaleY: { from: 1, to: 2.4 },
+      duration: 650, repeat: -1, ease: 'Sine.easeOut',
       onUpdate: () => {
         ring.clear();
-        ring.lineStyle(sz(3), 0x44ee88, 1);
-        ring.strokeCircle(ringX, Math.round(GH * 677 / 720), sz(36));
+        ring.lineStyle(sz(3), 0x44ff88, 1);
+        ring.strokeCircle(ringX, ringY, sz(34));
       },
     });
 
+    const stopMic = () => {
+      this.micRecognition = null;
+      this.micRingTween?.stop();
+      this.micRing?.destroy();
+      this.micIconTween?.stop();
+      this.micBtnLayers.forEach(l => l.clearTint());
+      this.micBtnIcon.clearTint();
+      this.micBtnIcon.setScale(1);
+    };
+
+    // ── Speech Recognition ─────────────────────────────────────────
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recognition = new (SR as new () => any)();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
+    this.micRecognition = recognition;
+    recognition.lang            = 'en-US';
+    recognition.interimResults  = false;
+    recognition.maxAlternatives = 5;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (e: any) => {
-      const word = e.results[0][0].transcript.trim().toLowerCase();
-      ringTween.stop(); ring.destroy();
-      this.showToast(`"${word}" 들었어요! 🎤`);
+      stopMic();
+      const pair = this.queue[this.roundIndex];
+
+      // Collect all alternatives into one string pool
+      const texts: string[] = [];
+      for (let i = 0; i < e.results[0].length; i++) {
+        texts.push(e.results[0][i].transcript.trim().toLowerCase());
+      }
+      const pool = texts.join(' ');
+
+      const hasWord1 = texts.some(t => t.includes(pair.word1));
+      const hasWord2 = texts.some(t => t.includes(pair.word2));
+
+      if (hasWord1 && hasWord2) {
+        // Both words heard → auto-snap and check
+        const leftCard  = this.leftCards.find(c => c?.active && c.word === pair.word1);
+        const rightCard = this.rightCards.find(c => c?.active && c.word === pair.word2);
+        if (leftCard && rightCard) {
+          if (this.selectedLeft  && this.selectedLeft  !== leftCard)  this.selectedLeft.shakeBack();
+          if (this.selectedRight && this.selectedRight !== rightCard) this.selectedRight.shakeBack();
+          this.selectedLeft  = leftCard;
+          this.selectedRight = rightCard;
+          leftCard.snapToZone (this.cx - this.snapOff, this.cy);
+          rightCard.snapToZone(this.cx + this.snapOff, this.cy);
+          this.time.delayedCall(400, () => this.checkMatch());
+        }
+      } else if (hasWord1 || hasWord2) {
+        const found = hasWord1 ? pair.word1 : pair.word2;
+        this.showToast(`"${found}" 들었어요! 다른 단어도 말해봐요 🎤`);
+      } else {
+        this.showToast(`"${pool.split(' ')[0]}" — 다시 말해볼까요? 🎤`);
+      }
     };
-    recognition.onerror = () => { ringTween.stop(); ring.destroy(); };
-    recognition.onend   = () => { ringTween.stop(); ring.destroy(); };
+
+    recognition.onerror = () => stopMic();
+    recognition.onend   = () => stopMic();
 
     recognition.start();
   }
