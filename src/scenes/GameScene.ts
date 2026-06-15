@@ -231,6 +231,15 @@ export class GameScene extends Phaser.Scene {
       cg.destroy();
     }
 
+    // ── 'icon_play_tri' — right-pointing play triangle for Next Play button ──
+    if (!this.textures.exists('icon_play_tri')) {
+      const pg = this.make.graphics({ x: 0, y: 0 }, false);
+      pg.fillStyle(0xffffff, 1);
+      pg.fillTriangle(8, 6, 8, 42, 42, 24);
+      pg.generateTexture('icon_play_tri', 48, 48);
+      pg.destroy();
+    }
+
     this.burst = this.add.particles(this.cx, this.cy, 'pDot', {
       speed: { min: 140, max: 440 },
       angle: { min: 0, max: 360 },
@@ -1686,21 +1695,38 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
-    // ── Next Play button (Figma: btn_next play, 202×62) ──────────────
-    const bW = Math.round(s * 202 * 1.5);
-    const bH = Math.round(bW * 62 / 202);
-    const bCY = (bookCY + bookH / 2) + Math.round(GH * 0.09) + bH / 2;
+    // ── Next Play button — nav_green style (same as in-game Mic button) ─
+    const bW = Math.round(s * 162 * 1.6);
+    const bH = Math.round(s * 62);
+    const bCY = (bookCY + bookH / 2) + Math.round(GH * 0.08) + bH / 2;
+    const shadowOff = Math.round(s * 4);
 
-    const btnImg = this.add.image(CX, bCY, 'btn_next_play').setDisplaySize(bW, bH).setDepth(72).setAlpha(0);
+    const btnCont = this.add.container(CX, bCY).setDepth(72).setAlpha(0);
+    const btnShadow = this.add.image(0, shadowOff, 'nav_green_shadow').setDisplaySize(bW, bH);
+    const btnMain   = this.add.image(0, 0,         'nav_green_main'  ).setDisplaySize(bW, bH);
+    const btnTop    = this.add.image(0, 0,         'nav_green_top'   ).setDisplaySize(bW, bH);
+
+    const iconSz = Math.round(bH * 0.48);
+    const btnIcon = this.add.image(0, 0, 'icon_play_tri').setDisplaySize(iconSz, iconSz);
+    const btnTxt  = this.add.text(0, 0, 'Next Play', {
+      fontFamily: '"Inter", "Baloo 2"', fontSize: `${Math.round(bH * 0.38)}px`,
+      color: '#FFFFFF', fontStyle: 'bold',
+      shadow: { offsetX: 0, offsetY: Math.round(s * 2), color: 'rgba(0,0,0,0.25)', blur: 2, fill: true },
+    }).setOrigin(0, 0.5);
+    const gap    = Math.round(s * 12);
+    const totalW = iconSz + gap + btnTxt.width;
+    btnIcon.setX(Math.round(-totalW / 2 + iconSz / 2));
+    btnTxt.setX(Math.round(-totalW / 2 + iconSz + gap));
+    btnCont.add([btnShadow, btnMain, btnTop, btnIcon, btnTxt]);
 
     const btnDelay = 360 + ROUNDS * 140 + 300;
-    this.tweens.add({ targets: btnImg, alpha: 1, duration: 300, delay: btnDelay });
+    this.tweens.add({ targets: btnCont, alpha: 1, duration: 300, delay: btnDelay });
 
-    const hit = this.add.graphics().setDepth(74).setAlpha(0.001);
+    const hit = this.add.graphics().setDepth(76).setAlpha(0.001);
     hit.fillRect(CX - bW / 2, bCY - bH / 2, bW, bH);
     hit.setInteractive(new Phaser.Geom.Rectangle(CX - bW / 2, bCY - bH / 2, bW, bH), Phaser.Geom.Rectangle.Contains);
     hit.on('pointerdown', () => {
-      this.tweens.add({ targets: btnImg, scaleX: 0.92, scaleY: 0.92, duration: 80, yoyo: true, ease: 'Back.easeIn' });
+      this.tweens.add({ targets: btnCont, scaleX: 0.92, scaleY: 0.92, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.time.delayedCall(100, () => {
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
