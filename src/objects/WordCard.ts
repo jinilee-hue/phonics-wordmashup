@@ -7,7 +7,6 @@ const R = 22;
 // Comfortable tap margin around the visible card so it's easy to grab.
 // Hovering a card raises its depth (see setupDrag) so this padding never lets a
 // neighbour steal the tap — whichever card you point at comes to the front.
-const HIT_PAD = 36;
 const IMG_H = CARD_H * 0.56;
 const WORD_H = CARD_H - IMG_H;
 
@@ -66,7 +65,7 @@ export class WordCard extends Phaser.GameObjects.Container {
 
     scene.add.existing(this as unknown as Phaser.GameObjects.GameObject);
     this.setDepth(10);
-    this.setSize(CARD_W + HIT_PAD * 2, CARD_H + HIT_PAD * 2);
+    this.setSize(CARD_W, CARD_H);
 
     this.drawCard();
     if (draggable) {
@@ -91,7 +90,7 @@ export class WordCard extends Phaser.GameObjects.Container {
 
   private setupTap() {
     this.setInteractive(
-      new Phaser.Geom.Rectangle(-CARD_W / 2 - HIT_PAD, -CARD_H / 2 - HIT_PAD, CARD_W + HIT_PAD * 2, CARD_H + HIT_PAD * 2),
+      new Phaser.Geom.Rectangle(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H),
       Phaser.Geom.Rectangle.Contains,
     );
     this.on('pointerdown', () => this.emit('cardtap', this));
@@ -153,7 +152,7 @@ export class WordCard extends Phaser.GameObjects.Container {
 
   private setupDrag(scene: Phaser.Scene) {
     this.setInteractive(
-      new Phaser.Geom.Rectangle(-CARD_W / 2 - HIT_PAD, -CARD_H / 2 - HIT_PAD, CARD_W + HIT_PAD * 2, CARD_H + HIT_PAD * 2),
+      new Phaser.Geom.Rectangle(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H),
       Phaser.Geom.Rectangle.Contains,
     );
     scene.input.setDraggable(this as unknown as Phaser.GameObjects.GameObject);

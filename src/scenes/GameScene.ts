@@ -315,24 +315,32 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
     });
 
-    // ── Progress bar pill — visual height matches btn_back_main visual area (58/68 × sz(62) ≈ sz(53)) ─
-    const pillW = p(241), pillH = sz(53);
+    // ── Progress bar pill — height=sz(53) matches btn_back_main visual area; width=sz(241) for uniform scaling ─
+    const pillW = sz(241), pillH = sz(53);
     const pillTop = q(13), pillCY = pillTop + sz(27);
-    this.add.image(p(88) + pillW / 2, pillCY + sz(3), 'hud_bar_main').setDisplaySize(pillW, pillH).setDepth(50);
-    this.add.image(p(88) + pillW / 2, pillCY,          'hud_bar_pill').setDisplaySize(pillW, pillH).setDepth(51);
+    const pillX = p(88);
+
+    // Drop shadow — two-pass soft shadow like btn_back_main built-in filter
+    const pillShadow = this.add.graphics().setDepth(49);
+    pillShadow.fillStyle(0x000000, 0.13);
+    pillShadow.fillRoundedRect(pillX - sz(1), pillTop + sz(5), pillW + sz(2), pillH + sz(1), sz(17));
+    pillShadow.fillStyle(0x000000, 0.22);
+    pillShadow.fillRoundedRect(pillX + sz(1), pillTop + sz(4), pillW, pillH, sz(15));
+
+    this.add.image(pillX + pillW / 2, pillCY, 'hud_bar_pill').setDisplaySize(pillW, pillH).setDepth(51);
 
     // Track inner — lower portion of pill
-    const tX = p(151), tY = pillTop + sz(25), tW = p(160), tH = sz(22);
+    const tX = pillX + sz(63), tY = pillTop + sz(25), tW = sz(160), tH = sz(22);
     const trackG = this.add.graphics().setDepth(52);
     trackG.fillStyle(0x382a65, 1);
     trackG.fillRoundedRect(tX, tY, tW, tH, sz(11));
 
-    this.hudTrackX = p(153); this.hudTrackY = pillTop + sz(27);
-    this.hudTrackW = p(156); this.hudTrackH = sz(18);
+    this.hudTrackX = pillX + sz(65); this.hudTrackY = pillTop + sz(27);
+    this.hudTrackW = sz(156); this.hudTrackH = sz(18);
     this.progressFill = this.add.graphics().setDepth(53);
 
     // "Compound Book" label — upper portion of pill
-    this.add.text(p(164), pillTop + sz(5), 'Compound Book', {
+    this.add.text(pillX + sz(76), pillTop + sz(5), 'Compound Book', {
       fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(15)}px`,
       color: '#FFFFFF', fontStyle: 'bold',
     }).setDepth(52);
@@ -361,28 +369,38 @@ export class GameScene extends Phaser.Scene {
       { bL: 860,  bgKey: 'badge_coin_main', iconKey: 'icon_money', iCX: 893,   numRX: 967,  plusCX: 997,  kind: 'coin'  },
       { bL: 1032, bgKey: 'badge_coin_main', iconKey: 'icon_gem',   iCX: 1067.5,numRX: 1139, plusCX: 1169, kind: 'gem'   },
     ];
-    const bW = p(152), bH = sz(53);
+    // bW=sz(152) uniform scaling matches bH=sz(53) so aspect ratio holds at any screen size
+    const bW = sz(152), bH = sz(53);
     const ibH = sz(37);
     const bTop = q(13), bCY = bTop + sz(27);
 
     badges.forEach(cfg => {
       const bx = p(cfg.bL);
-      this.add.image(bx + bW / 2, bCY + sz(3), 'badge_shadow').setDisplaySize(bW, bH).setDepth(50);
-      this.add.image(bx + bW / 2, bCY,          cfg.bgKey    ).setDisplaySize(bW, bH).setDepth(51);
-      const ibL = bx + p(27), ibT = bTop + sz(8), ibW = p(110);
+
+      // Drop shadow — two-pass soft shadow matching btn_back_main style
+      const badgeShadow = this.add.graphics().setDepth(49);
+      badgeShadow.fillStyle(0x000000, 0.13);
+      badgeShadow.fillRoundedRect(bx - sz(1), bTop + sz(5), bW + sz(2), bH + sz(1), sz(17));
+      badgeShadow.fillStyle(0x000000, 0.22);
+      badgeShadow.fillRoundedRect(bx + sz(1), bTop + sz(4), bW, bH, sz(15));
+
+      this.add.image(bx + bW / 2, bCY, cfg.bgKey).setDisplaySize(bW, bH).setDepth(51);
+      // Inner dark bar (number display area)
+      const ibL = bx + sz(27), ibT = bTop + sz(8), ibW = sz(110);
       const ibG = this.add.graphics().setDepth(52);
       ibG.fillStyle(0x426295, 1);
       ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(10));
       const iconSz = sz(36);
       this.add.image(bx + sz(10) + iconSz / 2, bCY, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53);
-      const numTxt = this.add.text(p(cfg.numRX), bTop + sz(15), '0', {
+      // Offsets 107 and 137 from badge left edge (Figma: numRX=bL+107, plusCX=bL+137)
+      const numTxt = this.add.text(bx + sz(107), bTop + sz(15), '0', {
         fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(22)}px`,
         color: '#FFFFFF', fontStyle: 'bold',
       }).setOrigin(1, 0).setDepth(53);
       if (cfg.kind === 'score') this.scoreText = numTxt;
       if (cfg.kind === 'coin')  this.coinText  = numTxt;
       if (cfg.kind === 'gem')   this.gemText   = numTxt;
-      this.add.image(p(cfg.plusCX), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
+      this.add.image(bx + sz(137), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
     });
   }
 
@@ -1106,9 +1124,7 @@ export class GameScene extends Phaser.Scene {
       { word: distract[3].word2, icon: distract[3].icon2 },
     ].sort(() => Math.random() - 0.5);
 
-    // Cards scale with the screen so the tap/drag area stays proportional at any resolution
-    const screenScale = Math.min(GW / 1280, GH / 720);
-    const CARD_SCALE = 0.972 * screenScale;
+    const CARD_SCALE = 0.972;
     // Figma-matched staggered positions (Figma canvas: 1280×720)
     // Values are card CENTER coordinates
     const pf = (fx: number) => Math.round(fx * GW / 1280);
@@ -1122,7 +1138,7 @@ export class GameScene extends Phaser.Scene {
     const makeCard = (figX: number, figY: number, angle: number, slotIdx: number, word: string, icon: string, side: 'left' | 'right') => {
       const targetX  = pf(figX);
       const targetY  = qf(figY);
-      const startX   = side === 'left' ? -CARD_W * screenScale : GW + CARD_W * screenScale;
+      const startX   = side === 'left' ? -CARD_W : GW + CARD_W;
       const leftKey  = `card_left_${word}`;
       const rightKey = `card_right_${word}`;
       const bgKey    = side === 'left'
