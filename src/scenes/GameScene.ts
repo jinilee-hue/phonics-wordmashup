@@ -809,7 +809,7 @@ export class GameScene extends Phaser.Scene {
     };
 
     // ── Replay  (Figma left:301) ──────────────────────────────────
-    drawLayered(301, 162, 'nav_blue_shadow', 'nav_blue_main', 'nav_blue_top');
+    drawLayered(301, 162, 'nav_home_shadow', 'nav_home_main', 'nav_home_top');
     const replayIcon = this.add.image(0, navCY, 'icon_replay').setDisplaySize(sz(30), sz(30)).setDepth(43);
     centerInBtn(p(301 + 81), replayIcon, sz(30), 'Replay');
     makeHit(301, 162, () => {
