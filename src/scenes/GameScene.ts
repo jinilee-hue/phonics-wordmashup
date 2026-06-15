@@ -302,8 +302,8 @@ export class GameScene extends Phaser.Scene {
     const bSz = sz(62);
     const backImg = this.add.image(p(14) + bSz / 2, q(13) + bSz / 2, 'btn_back_main').setDisplaySize(bSz, bSz).setDepth(51);
 
-    // Book icon centered on pill (pillCY = q(13)+sz(31))
-    this.add.image(p(98 + 23), q(13) + sz(31), 'icon_book').setDisplaySize(sz(46), sz(50)).setDepth(53);
+    // Book icon centered on pill (pillCY = q(13)+sz(27))
+    this.add.image(p(98 + 23), q(13) + sz(27), 'icon_book').setDisplaySize(sz(40), sz(44)).setDepth(53);
 
     // Back button hit zone (invisible)
     const hitG = this.add.graphics().setDepth(55).setAlpha(0.001);
@@ -315,31 +315,31 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
     });
 
-    // ── Progress bar pill — exact same height as back/settings button: sz(62) ─
-    const pillW = p(241), pillH = sz(62);
-    const pillTop = q(13), pillCY = pillTop + sz(31);
+    // ── Progress bar pill — visual height matches btn_back_main visual area (58/68 × sz(62) ≈ sz(53)) ─
+    const pillW = p(241), pillH = sz(53);
+    const pillTop = q(13), pillCY = pillTop + sz(27);
     this.add.image(p(88) + pillW / 2, pillCY + sz(3), 'hud_bar_main').setDisplaySize(pillW, pillH).setDepth(50);
     this.add.image(p(88) + pillW / 2, pillCY,          'hud_bar_pill').setDisplaySize(pillW, pillH).setDepth(51);
 
-    // Track inner — lower half of pill
-    const tX = p(151), tY = pillTop + sz(33), tW = p(160), tH = sz(24);
+    // Track inner — lower portion of pill
+    const tX = p(151), tY = pillTop + sz(25), tW = p(160), tH = sz(22);
     const trackG = this.add.graphics().setDepth(52);
     trackG.fillStyle(0x382a65, 1);
-    trackG.fillRoundedRect(tX, tY, tW, tH, sz(12));
+    trackG.fillRoundedRect(tX, tY, tW, tH, sz(11));
 
-    this.hudTrackX = p(153); this.hudTrackY = pillTop + sz(35);
-    this.hudTrackW = p(156); this.hudTrackH = sz(20);
+    this.hudTrackX = p(153); this.hudTrackY = pillTop + sz(27);
+    this.hudTrackW = p(156); this.hudTrackH = sz(18);
     this.progressFill = this.add.graphics().setDepth(53);
 
     // "Compound Book" label — upper portion of pill
-    this.add.text(p(164), pillTop + sz(7), 'Compound Book', {
-      fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(16)}px`,
+    this.add.text(p(164), pillTop + sz(5), 'Compound Book', {
+      fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(15)}px`,
       color: '#FFFFFF', fontStyle: 'bold',
     }).setDepth(52);
 
     // Round progress text (centered on track)
     this.roundText = this.add.text(tX + tW / 2, tY + tH / 2, `1 / ${ROUNDS}`, {
-      fontFamily: 'Baloo 2', fontSize: `${sz(11)}px`, color: 'rgba(255,255,255,0.7)',
+      fontFamily: 'Baloo 2', fontSize: `${sz(10)}px`, color: 'rgba(255,255,255,0.7)',
     }).setOrigin(0.5).setDepth(54);
 
     // ── Settings button  (Figma: left:1204, top:13, size:62) ─────
@@ -361,28 +361,28 @@ export class GameScene extends Phaser.Scene {
       { bL: 860,  bgKey: 'badge_coin_main', iconKey: 'icon_money', iCX: 893,   numRX: 967,  plusCX: 997,  kind: 'coin'  },
       { bL: 1032, bgKey: 'badge_coin_main', iconKey: 'icon_gem',   iCX: 1067.5,numRX: 1139, plusCX: 1169, kind: 'gem'   },
     ];
-    const bW = p(152), bH = sz(62);
-    const ibH = sz(44);
-    const bTop = q(13), bCY = bTop + sz(31);
+    const bW = p(152), bH = sz(53);
+    const ibH = sz(37);
+    const bTop = q(13), bCY = bTop + sz(27);
 
     badges.forEach(cfg => {
       const bx = p(cfg.bL);
       this.add.image(bx + bW / 2, bCY + sz(3), 'badge_shadow').setDisplaySize(bW, bH).setDepth(50);
       this.add.image(bx + bW / 2, bCY,          cfg.bgKey    ).setDisplaySize(bW, bH).setDepth(51);
-      const ibL = bx + p(27), ibT = bTop + sz(9), ibW = p(110);
+      const ibL = bx + p(27), ibT = bTop + sz(8), ibW = p(110);
       const ibG = this.add.graphics().setDepth(52);
       ibG.fillStyle(0x426295, 1);
-      ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(12));
-      const iconSz = sz(40);
+      ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(10));
+      const iconSz = sz(36);
       this.add.image(bx + sz(10) + iconSz / 2, bCY, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53);
-      const numTxt = this.add.text(p(cfg.numRX), bTop + sz(18), '0', {
-        fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(24)}px`,
+      const numTxt = this.add.text(p(cfg.numRX), bTop + sz(15), '0', {
+        fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(22)}px`,
         color: '#FFFFFF', fontStyle: 'bold',
       }).setOrigin(1, 0).setDepth(53);
       if (cfg.kind === 'score') this.scoreText = numTxt;
       if (cfg.kind === 'coin')  this.coinText  = numTxt;
       if (cfg.kind === 'gem')   this.gemText   = numTxt;
-      this.add.image(p(cfg.plusCX), bCY, 'btn_plus').setDisplaySize(sz(36), sz(36)).setDepth(53);
+      this.add.image(p(cfg.plusCX), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
     });
   }
 
@@ -1661,7 +1661,6 @@ export class GameScene extends Phaser.Scene {
     const { gw: GW, gh: GH, cx: CX, cy: CY } = this;
     const s = Math.min(GW / 1280, GH / 720);
 
-    // Dim backdrop — dark purple to match the game's overall tone
     const dim = this.add.graphics().setDepth(70).setAlpha(0);
     dim.fillStyle(0x150B33, 0.82);
     dim.fillRect(0, 0, GW, GH);
