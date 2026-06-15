@@ -252,6 +252,10 @@ export class GameScene extends Phaser.Scene {
         tc.arcTo(pts[i].x, pts[i].y, pts[(i + 1) % 3].x, pts[(i + 1) % 3].y, cornerR);
       }
       tc.closePath();
+      tc.shadowColor = 'rgba(0,0,0,0.35)';
+      tc.shadowOffsetX = 0;
+      tc.shadowOffsetY = 2;
+      tc.shadowBlur = 4;
       tc.fill();
       cvs.refresh();
     }
