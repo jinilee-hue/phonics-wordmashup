@@ -897,22 +897,23 @@ export class GameScene extends Phaser.Scene {
       const sx = card.scaleX, sy = card.scaleY;
       const cW = CARD_W * sx, cH = CARD_H * sy;
 
-      // Outer soft gold halo (behind card)
-      const halo = this.add.graphics().setDepth(card.depth - 1).setAlpha(0.5);
-      halo.fillStyle(0xFFD700, 1);
-      halo.fillCircle(card.x, card.y, Math.max(cW, cH) * 0.74);
-      this.tweens.add({ targets: halo, alpha: 0, duration: 2000, ease: 'Cubic.easeIn',
-        onComplete: () => halo.destroy() });
+      // Outer wide soft halo
+      const haloOut = this.add.graphics().setDepth(card.depth - 1).setAlpha(0.38);
+      haloOut.fillStyle(0xFFD700, 1);
+      haloOut.fillCircle(card.x, card.y, Math.max(cW, cH) * 0.95);
+      this.tweens.add({ targets: haloOut, alpha: 0, duration: 2000, ease: 'Cubic.easeIn',
+        onComplete: () => haloOut.destroy() });
 
-      // Gold border rotated to match card angle
-      const border = this.add.graphics().setDepth(card.depth + 2);
-      border.x = card.x; border.y = card.y; border.angle = card.angle;
-      border.lineStyle(5, 0xFFE040, 1);
-      border.strokeRoundedRect(-cW / 2 - 10, -cH / 2 - 10, cW + 20, cH + 20, 28);
-      border.lineStyle(2, 0xFFFFFF, 0.65);
-      border.strokeRoundedRect(-cW / 2 - 4, -cH / 2 - 4, cW + 8, cH + 8, 24);
-      this.tweens.add({ targets: border, alpha: 0, duration: 2000, ease: 'Cubic.easeIn',
-        onComplete: () => border.destroy() });
+      // Inner bright halo — pulses then fades
+      const haloIn = this.add.graphics().setDepth(card.depth - 1).setAlpha(0.72);
+      haloIn.fillStyle(0xFFEE44, 1);
+      haloIn.fillCircle(card.x, card.y, Math.max(cW, cH) * 0.65);
+      this.tweens.add({
+        targets: haloIn, alpha: 0.18,
+        duration: 420, ease: 'Sine.easeInOut', yoyo: true, repeat: 2,
+        onComplete: () => this.tweens.add({ targets: haloIn, alpha: 0, duration: 300,
+          onComplete: () => haloIn.destroy() }),
+      });
 
       // Scale bounce ×3
       this.tweens.add({
