@@ -1190,9 +1190,19 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.input.on('pointermove', (ptr: Phaser.Input.Pointer) => {
-      if (!this.dragCard || !ptr.isDown) return;
-      this.dragCard.x = ptr.worldX + this.dragOffX;
-      this.dragCard.y = ptr.worldY + this.dragOffY;
+      if (this.dragCard) {
+        if (ptr.isDown) {
+          this.dragCard.x = ptr.worldX + this.dragOffX;
+          this.dragCard.y = ptr.worldY + this.dragOffY;
+        }
+        return;
+      }
+      // Hand cursor on any card within grab radius (proximity-based, same as drag selection)
+      const cards = [...this.leftCards, ...this.rightCards].filter(c => !c.inZone);
+      const nearCard = cards.some(
+        c => Phaser.Math.Distance.Between(ptr.worldX, ptr.worldY, c.x, c.y) < GRAB_R,
+      );
+      this.game.canvas.style.cursor = nearCard ? 'pointer' : 'default';
     });
 
     this.input.on('pointerup', () => {
@@ -1221,6 +1231,7 @@ export class GameScene extends Phaser.Scene {
         card.resetPosition();
       }
       card.endDrag();
+      this.game.canvas.style.cursor = 'default';
     });
   }
 
