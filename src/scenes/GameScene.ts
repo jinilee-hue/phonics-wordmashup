@@ -401,8 +401,8 @@ export class GameScene extends Phaser.Scene {
       if (cfg.kind === 'score') this.scoreText = numTxt;
       if (cfg.kind === 'coin')  this.coinText  = numTxt;
       if (cfg.kind === 'gem')   this.gemText   = numTxt;
-      // + button: right edge = badge right edge (center at bW - half button width)
-      this.add.image(bx + bW - sz(16), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
+      // + button: right edge = badge right edge (center at bW - half button width + 3px nudge)
+      this.add.image(bx + bW - sz(13), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
     });
   }
 
