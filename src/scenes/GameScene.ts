@@ -1588,24 +1588,25 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
-    // ── RIGHT page: paginated collection (6/page, 3×2, with nav arrows) ──
+    // ── RIGHT page: unobtained cards only, greyed-out, paginated (6/page) ──
     const rL = centerGap + pad, rR = pageX + pageFullW - pad;
     const rCX = (rL + rR) / 2;
     const collected = this.getCollected();
-    const thisRunResults = new Set(this.queue.map(p => p.result));
 
-    // Count badge in title bar (right side, aligned to grid centre)
+    // Count badge — top-right of right grid
     const countTxt = this.add.text(rR, titleY, `${collected.size} / ${COMPOUND_PAIRS.length}`, {
       fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.42)}px`,
       color: '#8A43D6', fontStyle: 'bold',
     }).setOrigin(1, 0.5);
     book.add(countTxt);
 
-    // Grid dimensions — 3×2 (same as left page), bottom zone reserved for nav
+    // Only unobtained cards go on the right page
+    const unobtained = COMPOUND_PAIRS.filter(p => !collected.has(p.result));
+
     const navH        = Math.round(bookH * 0.11);
     const RCOLS = 3, RROWS = 2;
-    const CARDS_PER_PAGE = RCOLS * RROWS;           // 6
-    const totalPages     = Math.ceil(COMPOUND_PAIRS.length / CARDS_PER_PAGE);
+    const CARDS_PER_PAGE = RCOLS * RROWS;  // 6
+    const totalPages     = unobtained.length > 0 ? Math.ceil(unobtained.length / CARDS_PER_PAGE) : 0;
     const rCellW = (rR - rL) / RCOLS;
     const rCellH = (contentBottom - navH - contentTop) / RROWS;
     const rCardH = Math.min(rCellH * 0.9, rCellW * 0.86 * 1.21);
@@ -1614,103 +1615,98 @@ export class GameScene extends Phaser.Scene {
     let collPage = 0;
     const pages: Phaser.GameObjects.Container[] = [];
 
-    for (let pg = 0; pg < totalPages; pg++) {
-      const pgCont = this.add.container(0, 0);
-      if (pg !== 0) pgCont.setVisible(false);
-      book.add(pgCont);
+    if (unobtained.length === 0) {
+      // All cards collected — show a congratulations message
+      const allTxt = this.add.text(rCX, (contentTop + contentBottom) / 2, 'All\nCollected! 🎉', {
+        fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.055)}px`,
+        color: '#5A2E94', fontStyle: 'bold', align: 'center',
+      }).setOrigin(0.5);
+      book.add(allTxt);
+    } else {
+      for (let pg = 0; pg < totalPages; pg++) {
+        const pgCont = this.add.container(0, 0);
+        if (pg !== 0) pgCont.setVisible(false);
+        book.add(pgCont);
 
-      COMPOUND_PAIRS.slice(pg * CARDS_PER_PAGE, (pg + 1) * CARDS_PER_PAGE).forEach((p, idx) => {
-        const col = idx % RCOLS, row = Math.floor(idx / RCOLS);
-        const tx  = rL + rCellW * (col + 0.5);
-        const ty  = contentTop + rCellH * (row + 0.5);
-        const isCol = collected.has(p.result);
-        const isNew = isCol && thisRunResults.has(p.result) && pg === 0;
+        unobtained.slice(pg * CARDS_PER_PAGE, (pg + 1) * CARDS_PER_PAGE).forEach((p, idx) => {
+          const col = idx % RCOLS, row = Math.floor(idx / RCOLS);
+          const tx  = rL + rCellW * (col + 0.5);
+          const ty  = contentTop + rCellH * (row + 0.5);
 
-        // Slot background
-        const sg = this.add.graphics();
-        sg.fillStyle(0xC8B8DC, 0.45);
-        sg.fillRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
-        sg.lineStyle(1, 0x9A7DB8, 0.3);
-        sg.strokeRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
-        pgCont.add(sg);
-
-        if (isCol) {
           const key = `card_${p.result}`;
           if (this.textures.exists(key)) {
             const im = this.add.image(tx, ty, key).setDisplaySize(rCardW, rCardH);
-            const tsx = im.scaleX, tsy = im.scaleY;
-            im.setScale(isNew ? tsx * 0.2 : tsx, isNew ? tsy * 0.2 : tsy).setAlpha(pg === 0 ? 0 : 1);
+            im.setTint(0x888888).setAlpha(0.4);
             pgCont.add(im);
-            if (pg === 0) {
-              this.tweens.add({
-                targets: im, scaleX: tsx, scaleY: tsy, alpha: 1,
-                duration: isNew ? 300 : 160,
-                ease:     isNew ? 'Back.easeOut' : 'Cubic.easeOut',
-                delay:    isNew ? 420 + idx * 50 : 100 + idx * 14,
-                onComplete: isNew ? () => { this.burst.setPosition(CX + tx, bookCY + ty); this.burst.explode(6); } : undefined,
-              });
-            }
           } else {
-            const fbg = this.add.graphics();
-            fbg.fillStyle(0xFFE9A0, 1);
-            fbg.fillRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
-            fbg.lineStyle(1.5, 0xB8860B, 0.8);
-            fbg.strokeRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
-            const et = this.add.text(tx, ty, p.iconResult, {
-              fontSize: `${Math.round(rCardH * 0.44)}px`,
-            }).setOrigin(0.5).setAlpha(pg === 0 ? 0 : 1);
-            pgCont.add([fbg, et]);
-            if (pg === 0) {
-              this.tweens.add({ targets: [fbg, et], alpha: 1, duration: 180, ease: 'Cubic.easeOut', delay: 100 + idx * 14 });
-            }
+            // Fallback: grey slot
+            const lo = this.add.graphics();
+            lo.fillStyle(0xB0A0C8, 0.3);
+            lo.fillRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
+            const lt = this.add.text(tx, ty, p.result, {
+              fontFamily: '"Baloo 2"', fontSize: `${Math.round(rCardH * 0.18)}px`,
+              color: '#8A6BB8', fontStyle: 'bold',
+            }).setOrigin(0.5).setAlpha(0.4);
+            pgCont.add([lo, lt]);
           }
-        } else {
-          const lo = this.add.graphics();
-          lo.fillStyle(0x8A6BB8, 0.18);
-          lo.fillRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
-          const lt = this.add.text(tx, ty, '?', {
-            fontFamily: '"Baloo 2"', fontSize: `${Math.round(rCardH * 0.46)}px`,
-            color: '#8A6BB8', fontStyle: 'bold',
-          }).setOrigin(0.5).setAlpha(0.55);
-          pgCont.add([lo, lt]);
-        }
-      });
+        });
 
-      pages.push(pgCont);
+        pages.push(pgCont);
+      }
+
+      // ── Dot indicators + nav arrows ──────────────────────────────
+      const navCY      = contentBottom - Math.round(navH * 0.46);
+      const navFontSz  = Math.round(bookH * 0.075);
+      const dotR       = Math.round(navH * 0.13);
+      const dotSpacing = Math.round(dotR * 3.2);
+      const dotStartX  = rCX - ((totalPages - 1) * dotSpacing) / 2;
+
+      const dotGfxArr: Phaser.GameObjects.Graphics[] = [];
+      for (let d = 0; d < totalPages; d++) {
+        const dg = this.add.graphics();
+        dotGfxArr.push(dg);
+        book.add(dg);
+      }
+
+      const updateDots = (page: number) => {
+        dotGfxArr.forEach((dg, d) => {
+          dg.clear();
+          const dx = dotStartX + d * dotSpacing;
+          if (d === page) {
+            dg.fillStyle(0x6B49A8, 1);
+            dg.fillCircle(dx, navCY, dotR);
+          } else {
+            dg.fillStyle(0x9A7DB8, 0.35);
+            dg.fillCircle(dx, navCY, dotR);
+          }
+        });
+      };
+      updateDots(0);
+
+      const prevBtn = this.add.text(rL + Math.round(navFontSz * 0.55), navCY, '‹', {
+        fontFamily: '"Baloo 2"', fontSize: `${navFontSz}px`, color: '#6B49A8', fontStyle: 'bold',
+      }).setOrigin(0.5).setVisible(false);
+      book.add(prevBtn);
+
+      const nextBtn = this.add.text(rR - Math.round(navFontSz * 0.55), navCY, '›', {
+        fontFamily: '"Baloo 2"', fontSize: `${navFontSz}px`, color: '#6B49A8', fontStyle: 'bold',
+      }).setOrigin(0.5).setVisible(totalPages > 1);
+      book.add(nextBtn);
+
+      const navigate = (dir: number) => {
+        const np = collPage + dir;
+        if (np < 0 || np >= totalPages) return;
+        pages[collPage].setVisible(false);
+        collPage = np;
+        pages[collPage].setVisible(true);
+        updateDots(collPage);
+        prevBtn.setVisible(collPage > 0);
+        nextBtn.setVisible(collPage < totalPages - 1);
+      };
+
+      prevBtn.setInteractive().on('pointerdown', () => navigate(-1));
+      nextBtn.setInteractive().on('pointerdown', () => navigate(1));
     }
-
-    // ── Nav buttons below grid ────────────────────────────────────────
-    const navCY     = contentBottom - Math.round(navH * 0.46);
-    const navFontSz = Math.round(bookH * 0.075);
-
-    const prevBtn = this.add.text(rL + Math.round(navFontSz * 0.55), navCY, '‹', {
-      fontFamily: '"Baloo 2"', fontSize: `${navFontSz}px`, color: '#6B49A8', fontStyle: 'bold',
-    }).setOrigin(0.5).setVisible(false);
-    book.add(prevBtn);
-
-    const pageNumTxt = this.add.text(rCX, navCY, `1 / ${totalPages}`, {
-      fontFamily: '"Baloo 2"', fontSize: `${Math.round(navFontSz * 0.52)}px`, color: '#9A80C4',
-    }).setOrigin(0.5);
-    book.add(pageNumTxt);
-
-    const nextBtn = this.add.text(rR - Math.round(navFontSz * 0.55), navCY, '›', {
-      fontFamily: '"Baloo 2"', fontSize: `${navFontSz}px`, color: '#6B49A8', fontStyle: 'bold',
-    }).setOrigin(0.5).setVisible(totalPages > 1);
-    book.add(nextBtn);
-
-    const navigate = (dir: number) => {
-      const np = collPage + dir;
-      if (np < 0 || np >= totalPages) return;
-      pages[collPage].setVisible(false);
-      collPage = np;
-      pages[collPage].setVisible(true);
-      pageNumTxt.setText(`${collPage + 1} / ${totalPages}`);
-      prevBtn.setVisible(collPage > 0);
-      nextBtn.setVisible(collPage < totalPages - 1);
-    };
-
-    prevBtn.setInteractive().on('pointerdown', () => navigate(-1));
-    nextBtn.setInteractive().on('pointerdown', () => navigate(1));
 
     // Book entrance
     this.tweens.add({ targets: book, alpha: 1, scaleX: 1, scaleY: 1, duration: 360, ease: 'Back.easeOut' });
