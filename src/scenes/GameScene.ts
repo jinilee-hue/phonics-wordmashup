@@ -915,7 +915,6 @@ export class GameScene extends Phaser.Scene {
       for (let i = 0; i < e.results[0].length; i++) {
         texts.push(e.results[0][i].transcript.trim().toLowerCase());
       }
-      const pool = texts.join(' ');
 
       const hasWord1 = texts.some(t => t.includes(pair.word1));
       const hasWord2 = texts.some(t => t.includes(pair.word2));
@@ -937,7 +936,7 @@ export class GameScene extends Phaser.Scene {
         const found = hasWord1 ? pair.word1 : pair.word2;
         this.showToast(`"${found}" 들었어요! 다른 단어도 말해봐요 🎤`);
       } else {
-        this.showToast(`"${pool.split(' ')[0]}" — 다시 말해볼까요? 🎤`);
+        this.showToast('다시 한번 생각해서 말해볼까요? 🎤');
       }
     };
 
