@@ -79,6 +79,7 @@ export class GameScene extends Phaser.Scene {
     this.load.svg('btn_plus',        './images/btn_plus.svg',        { scale: 2 });
     this.load.svg('btn_setting',     './images/btn_setting.svg',     { scale: 2 });
     this.load.svg('btn_replay_bg',   './images/btn_replay_bg.svg',   { scale: 2 });
+    this.load.image('btn_next_play', './images/btn_next_play.png');
     this.load.svg('nav_home_shadow', './images/nav_home_shadow.svg', { scale: 2 });
     this.load.svg('nav_home_main',   './images/nav_home_main.svg',   { scale: 2 });
     this.load.svg('nav_home_top',    './images/nav_home_top.svg',    { scale: 2 });
@@ -1685,32 +1686,21 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
-    // ── Play Again button — same design as the in-game Replay button ──
-    const bW = Math.round(s * 162 * 1.5);
-    const bH = Math.round(bW * 62 / 162);
-    const bCY = (bookCY + bookH / 2) + Math.round(GH * 0.09) + bH / 2;   // wider gap above the button
-    const iconSz = Math.round(bH * 0.46);
+    // ── Next Play button (Figma: btn_next play, 202×62) ──────────────
+    const bW = Math.round(s * 202 * 1.5);
+    const bH = Math.round(bW * 62 / 202);
+    const bCY = (bookCY + bookH / 2) + Math.round(GH * 0.09) + bH / 2;
 
-    const btnBg = this.add.image(CX, bCY, 'btn_replay_bg').setDisplaySize(bW, bH).setDepth(72).setAlpha(0);
-    const btnIcon = this.add.image(0, bCY, 'icon_replay').setDisplaySize(iconSz, iconSz).setDepth(73).setAlpha(0);
-    const btnTxt = this.add.text(0, bCY, 'Next Level', {
-      fontFamily: '"Inter", "Baloo 2"', fontSize: `${Math.round(bH * 0.34)}px`,
-      color: '#FFFFFF', fontStyle: 'bold',
-      shadow: { offsetX: 0, offsetY: Math.round(s * 2), color: 'rgba(0,0,0,0.25)', blur: 2, fill: true },
-    }).setOrigin(0, 0.5).setDepth(73).setAlpha(0);
-    const gap = Math.round(s * 10);
-    const totalW = iconSz + gap + btnTxt.width;
-    btnIcon.setX(Math.round(CX - totalW / 2 + iconSz / 2));
-    btnTxt.setX(Math.round(CX - totalW / 2 + iconSz + gap));
+    const btnImg = this.add.image(CX, bCY, 'btn_next_play').setDisplaySize(bW, bH).setDepth(72).setAlpha(0);
 
     const btnDelay = 360 + ROUNDS * 140 + 300;
-    this.tweens.add({ targets: [btnBg, btnIcon, btnTxt], alpha: 1, duration: 300, delay: btnDelay });
+    this.tweens.add({ targets: btnImg, alpha: 1, duration: 300, delay: btnDelay });
 
     const hit = this.add.graphics().setDepth(74).setAlpha(0.001);
     hit.fillRect(CX - bW / 2, bCY - bH / 2, bW, bH);
     hit.setInteractive(new Phaser.Geom.Rectangle(CX - bW / 2, bCY - bH / 2, bW, bH), Phaser.Geom.Rectangle.Contains);
     hit.on('pointerdown', () => {
-      this.tweens.add({ targets: [btnBg, btnIcon], scaleX: '*=0.92', scaleY: '*=0.92', duration: 80, yoyo: true, ease: 'Back.easeIn' });
+      this.tweens.add({ targets: btnImg, scaleX: 0.92, scaleY: 0.92, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.time.delayedCall(100, () => {
         this.cameras.main.fadeOut(300, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
