@@ -1584,26 +1584,31 @@ export class GameScene extends Phaser.Scene {
     const collected = this.getCollected();
     const thisRunResults = new Set(this.queue.map(p => p.result));
 
-    const collHeading = this.add.text(rCX, contentTop + bookH * 0.01, 'My Collection', {
-      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.058)}px`,
-      color: '#5A2E94', fontStyle: 'bold',
-    }).setOrigin(0.5);
-    book.add(collHeading);
-
-    const countTxt = this.add.text(rCX, contentTop + bookH * 0.072, `${collected.size} / ${COMPOUND_PAIRS.length}`, {
-      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.036)}px`,
+    // Count badge in the title bar (right-page side, same Y as "Compound Book")
+    const countTxt = this.add.text(rCX, titleY, `${collected.size} / ${COMPOUND_PAIRS.length}`, {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.42)}px`,
       color: '#8A43D6', fontStyle: 'bold',
-    }).setOrigin(0.5);
+    }).setOrigin(0.5, 0.5);
     book.add(countTxt);
 
     const COLS = 5, ROWS = 6;
-    const gridTop = contentTop + Math.round(bookH * 0.115);
+    const gridTop = contentTop + Math.round(bookH * 0.02);
     const gridW = rR - rL;
     const gridH = contentBottom - gridTop;
     const cellW = gridW / COLS;
     const cellH = gridH / ROWS;
-    const thumbW = Math.round(cellW * 0.84);
-    const thumbH = Math.round(cellH * 0.84);
+
+    // Derive slot size from actual card aspect ratio
+    let cardAspect = 1.35;
+    for (const p of COMPOUND_PAIRS) {
+      const key = `card_${p.result}`;
+      if (this.textures.exists(key)) {
+        const src = this.textures.get(key).getSourceImage() as { width: number; height: number };
+        if (src.width > 0 && src.height > 0) { cardAspect = src.width / src.height; break; }
+      }
+    }
+    const thumbW = Math.round(Math.min(cellW * 0.88, cellH * 0.92 * cardAspect));
+    const thumbH = Math.round(thumbW / cardAspect);
 
     // All slot backgrounds drawn at once
     const slotG = this.add.graphics();
