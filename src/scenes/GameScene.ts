@@ -1588,101 +1588,129 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
-    // ── RIGHT page: collection dokkam — all 30 compound cards ───────
+    // ── RIGHT page: paginated collection (6/page, 3×2, with nav arrows) ──
     const rL = centerGap + pad, rR = pageX + pageFullW - pad;
     const rCX = (rL + rR) / 2;
     const collected = this.getCollected();
     const thisRunResults = new Set(this.queue.map(p => p.result));
 
-    // Count badge in the title bar (right-page side, same Y as "Compound Book")
+    // Count badge in title bar (right side, aligned to grid centre)
     const countTxt = this.add.text(rCX, titleY, `${collected.size} / ${COMPOUND_PAIRS.length}`, {
       fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.42)}px`,
       color: '#8A43D6', fontStyle: 'bold',
     }).setOrigin(0.5, 0.5);
     book.add(countTxt);
 
-    const COLS = 5, ROWS = 6;
-    const gridTop = contentTop + Math.round(bookH * 0.02);
-    const gridW = rR - rL;
-    const gridH = contentBottom - gridTop;
-    const cellW = gridW / COLS;
-    const cellH = gridH / ROWS;
+    // Grid dimensions — 3×2 (same as left page), bottom zone reserved for nav
+    const navH        = Math.round(bookH * 0.11);
+    const RCOLS = 3, RROWS = 2;
+    const CARDS_PER_PAGE = RCOLS * RROWS;           // 6
+    const totalPages     = Math.ceil(COMPOUND_PAIRS.length / CARDS_PER_PAGE);
+    const rCellW = (rR - rL) / RCOLS;
+    const rCellH = (contentBottom - navH - contentTop) / RROWS;
+    const rCardH = Math.min(rCellH * 0.9, rCellW * 0.86 * 1.21);
+    const rCardW = rCardH / 1.21;
 
-    // Derive slot size from actual card aspect ratio
-    let cardAspect = 1.35;
-    for (const p of COMPOUND_PAIRS) {
-      const key = `card_${p.result}`;
-      if (this.textures.exists(key)) {
-        const src = this.textures.get(key).getSourceImage() as { width: number; height: number };
-        if (src.width > 0 && src.height > 0) { cardAspect = src.width / src.height; break; }
-      }
-    }
-    const thumbW = Math.round(Math.min(cellW * 0.88, cellH * 0.92 * cardAspect));
-    const thumbH = Math.round(thumbW / cardAspect);
+    let collPage = 0;
+    const pages: Phaser.GameObjects.Container[] = [];
 
-    // All slot backgrounds drawn at once
-    const slotG = this.add.graphics();
-    book.add(slotG);
-    COMPOUND_PAIRS.forEach((_, i) => {
-      const col = i % COLS, row = Math.floor(i / COLS);
-      const tx = rL + cellW * (col + 0.5);
-      const ty = gridTop + cellH * (row + 0.5);
-      slotG.fillStyle(0xC8B8DC, 0.45);
-      slotG.fillRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
-      slotG.lineStyle(1, 0x9A7DB8, 0.3);
-      slotG.strokeRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
-    });
+    for (let pg = 0; pg < totalPages; pg++) {
+      const pgCont = this.add.container(0, 0);
+      if (pg !== 0) pgCont.setVisible(false);
+      book.add(pgCont);
 
-    COMPOUND_PAIRS.forEach((p, i) => {
-      const col = i % COLS, row = Math.floor(i / COLS);
-      const tx = rL + cellW * (col + 0.5);
-      const ty = gridTop + cellH * (row + 0.5);
-      const isCollected = collected.has(p.result);
-      const isNew = thisRunResults.has(p.result);
+      COMPOUND_PAIRS.slice(pg * CARDS_PER_PAGE, (pg + 1) * CARDS_PER_PAGE).forEach((p, idx) => {
+        const col = idx % RCOLS, row = Math.floor(idx / RCOLS);
+        const tx  = rL + rCellW * (col + 0.5);
+        const ty  = contentTop + rCellH * (row + 0.5);
+        const isCol = collected.has(p.result);
+        const isNew = isCol && thisRunResults.has(p.result) && pg === 0;
 
-      if (isCollected) {
-        const key = `card_${p.result}`;
-        if (this.textures.exists(key)) {
-          const im = this.add.image(tx, ty, key).setDisplaySize(thumbW, thumbH);
-          const tsx = im.scaleX, tsy = im.scaleY;
-          im.setScale(isNew ? tsx * 0.2 : tsx, isNew ? tsy * 0.2 : tsy).setAlpha(0);
-          book.add(im);
-          this.tweens.add({
-            targets: im,
-            scaleX: tsx, scaleY: tsy, alpha: 1,
-            duration: isNew ? 300 : 160,
-            ease: isNew ? 'Back.easeOut' : 'Cubic.easeOut',
-            delay: isNew ? 420 + i * 50 : 100 + i * 14,
-            onComplete: isNew ? () => { this.burst.setPosition(CX + tx, bookCY + ty); this.burst.explode(6); } : undefined,
-          });
+        // Slot background
+        const sg = this.add.graphics();
+        sg.fillStyle(0xC8B8DC, 0.45);
+        sg.fillRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
+        sg.lineStyle(1, 0x9A7DB8, 0.3);
+        sg.strokeRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
+        pgCont.add(sg);
+
+        if (isCol) {
+          const key = `card_${p.result}`;
+          if (this.textures.exists(key)) {
+            const im = this.add.image(tx, ty, key).setDisplaySize(rCardW, rCardH);
+            const tsx = im.scaleX, tsy = im.scaleY;
+            im.setScale(isNew ? tsx * 0.2 : tsx, isNew ? tsy * 0.2 : tsy).setAlpha(pg === 0 ? 0 : 1);
+            pgCont.add(im);
+            if (pg === 0) {
+              this.tweens.add({
+                targets: im, scaleX: tsx, scaleY: tsy, alpha: 1,
+                duration: isNew ? 300 : 160,
+                ease:     isNew ? 'Back.easeOut' : 'Cubic.easeOut',
+                delay:    isNew ? 420 + idx * 50 : 100 + idx * 14,
+                onComplete: isNew ? () => { this.burst.setPosition(CX + tx, bookCY + ty); this.burst.explode(6); } : undefined,
+              });
+            }
+          } else {
+            const fbg = this.add.graphics();
+            fbg.fillStyle(0xFFE9A0, 1);
+            fbg.fillRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
+            fbg.lineStyle(1.5, 0xB8860B, 0.8);
+            fbg.strokeRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
+            const et = this.add.text(tx, ty, p.iconResult, {
+              fontSize: `${Math.round(rCardH * 0.44)}px`,
+            }).setOrigin(0.5).setAlpha(pg === 0 ? 0 : 1);
+            pgCont.add([fbg, et]);
+            if (pg === 0) {
+              this.tweens.add({ targets: [fbg, et], alpha: 1, duration: 180, ease: 'Cubic.easeOut', delay: 100 + idx * 14 });
+            }
+          }
         } else {
-          // Fallback: emoji mini-card
-          const fbg = this.add.graphics();
-          fbg.fillStyle(0xFFE9A0, 1);
-          fbg.fillRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
-          fbg.lineStyle(1.5, 0xB8860B, 0.8);
-          fbg.strokeRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
-          const et = this.add.text(tx, ty, p.iconResult, {
-            fontSize: `${Math.round(thumbH * 0.44)}px`,
-          }).setOrigin(0.5).setAlpha(0);
-          book.add([fbg, et]);
-          this.tweens.add({
-            targets: [fbg, et], alpha: 1,
-            duration: 180, ease: 'Cubic.easeOut', delay: 100 + i * 14,
-          });
+          const lo = this.add.graphics();
+          lo.fillStyle(0x8A6BB8, 0.18);
+          lo.fillRoundedRect(tx - rCardW / 2, ty - rCardH / 2, rCardW, rCardH, 4);
+          const lt = this.add.text(tx, ty, '?', {
+            fontFamily: '"Baloo 2"', fontSize: `${Math.round(rCardH * 0.46)}px`,
+            color: '#8A6BB8', fontStyle: 'bold',
+          }).setOrigin(0.5).setAlpha(0.55);
+          pgCont.add([lo, lt]);
         }
-      } else {
-        // Not yet collected — lock overlay with "?"
-        const lockOverlay = this.add.graphics();
-        lockOverlay.fillStyle(0x8A6BB8, 0.18);
-        lockOverlay.fillRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
-        const lockTxt = this.add.text(tx, ty, '?', {
-          fontFamily: '"Baloo 2"', fontSize: `${Math.round(thumbH * 0.46)}px`,
-          color: '#8A6BB8', fontStyle: 'bold',
-        }).setOrigin(0.5).setAlpha(0.55);
-        book.add([lockOverlay, lockTxt]);
-      }
-    });
+      });
+
+      pages.push(pgCont);
+    }
+
+    // ── Nav buttons below grid ────────────────────────────────────────
+    const navCY     = contentBottom - Math.round(navH * 0.46);
+    const navFontSz = Math.round(bookH * 0.075);
+
+    const prevBtn = this.add.text(rL + Math.round(navFontSz * 0.55), navCY, '‹', {
+      fontFamily: '"Baloo 2"', fontSize: `${navFontSz}px`, color: '#6B49A8', fontStyle: 'bold',
+    }).setOrigin(0.5).setVisible(false);
+    book.add(prevBtn);
+
+    const pageNumTxt = this.add.text(rCX, navCY, `1 / ${totalPages}`, {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(navFontSz * 0.52)}px`, color: '#9A80C4',
+    }).setOrigin(0.5);
+    book.add(pageNumTxt);
+
+    const nextBtn = this.add.text(rR - Math.round(navFontSz * 0.55), navCY, '›', {
+      fontFamily: '"Baloo 2"', fontSize: `${navFontSz}px`, color: '#6B49A8', fontStyle: 'bold',
+    }).setOrigin(0.5).setVisible(totalPages > 1);
+    book.add(nextBtn);
+
+    const navigate = (dir: number) => {
+      const np = collPage + dir;
+      if (np < 0 || np >= totalPages) return;
+      pages[collPage].setVisible(false);
+      collPage = np;
+      pages[collPage].setVisible(true);
+      pageNumTxt.setText(`${collPage + 1} / ${totalPages}`);
+      prevBtn.setVisible(collPage > 0);
+      nextBtn.setVisible(collPage < totalPages - 1);
+    };
+
+    prevBtn.setInteractive().on('pointerdown', () => navigate(-1));
+    nextBtn.setInteractive().on('pointerdown', () => navigate(1));
 
     // Book entrance
     this.tweens.add({ targets: book, alpha: 1, scaleX: 1, scaleY: 1, duration: 360, ease: 'Back.easeOut' });
