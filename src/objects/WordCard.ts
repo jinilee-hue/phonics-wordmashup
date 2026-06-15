@@ -7,7 +7,7 @@ const R = 22;
 // Comfortable tap margin around the visible card so it's easy to grab.
 // Hovering a card raises its depth (see setupDrag) so this padding never lets a
 // neighbour steal the tap — whichever card you point at comes to the front.
-const HIT_PAD = 20;
+const HIT_PAD = 36;
 const IMG_H = CARD_H * 0.56;
 const WORD_H = CARD_H - IMG_H;
 

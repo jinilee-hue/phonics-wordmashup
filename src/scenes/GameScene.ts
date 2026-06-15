@@ -957,8 +957,8 @@ export class GameScene extends Phaser.Scene {
     const pf = (fx: number) => Math.round(fx * GW / 1280);
     const qf = (fy: number) => Math.round(fy * GH / 720);
 
-    const leftPos  = [{ x: 209, y: 198 }, { x: 359, y: 334 }, { x: 153, y: 449 }];
-    const rightPos = [{ x: 950, y: 240 }, { x: 1020, y: 435 }, { x: 1139, y: 190 }];
+    const leftPos  = [{ x: 209, y: 185 }, { x: 359, y: 345 }, { x: 153, y: 500 }];
+    const rightPos = [{ x: 1139, y: 175 }, { x: 950, y: 360 }, { x: 1060, y: 510 }];
     const leftAngle  = [-8, -4, -12];
     const rightAngle = [10,  4,   8];
 
