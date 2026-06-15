@@ -389,7 +389,7 @@ export class GameScene extends Phaser.Scene {
 
       this.add.image(bx + bW / 2, bCY, cfg.bgKey).setDisplaySize(bW, bH).setDepth(51);
       // Dark bar spans from under icon to just before the + button
-      const ibL = bx + sz(27), ibT = bTop + sz(8), ibW = bW - sz(61);
+      const ibL = bx + sz(27), ibT = bTop + sz(8), ibW = bW - sz(35);
       const ibG = this.add.graphics().setDepth(52);
       ibG.fillStyle(0x426295, 1);
       ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(10));
