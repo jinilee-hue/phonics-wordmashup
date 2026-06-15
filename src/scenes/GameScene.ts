@@ -856,7 +856,7 @@ export class GameScene extends Phaser.Scene {
 
     const SR = (window as unknown as Record<string, unknown>).SpeechRecognition
              || (window as unknown as Record<string, unknown>).webkitSpeechRecognition;
-    if (!SR) { this.showToast('이 브라우저는 음성 인식을 지원하지 않아요 😢'); return; }
+    if (!SR) { this.showToast('이 브라우저는 음성 인식을 지원하지 않아요'); return; }
 
     const { gw: GW, gh: GH } = this;
     const s  = Math.min(GW / 1280, GH / 720);
