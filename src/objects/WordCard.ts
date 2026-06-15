@@ -150,34 +150,32 @@ export class WordCard extends Phaser.GameObjects.Container {
     g.strokeRoundedRect(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H, R);
   }
 
-  private setupDrag(scene: Phaser.Scene) {
+  private setupDrag(_scene: Phaser.Scene) {
+    // setInteractive kept for mouse pointerover/pointerout hover feedback.
+    // Actual drag is handled by proximity selection in GameScene.setupDrag().
     this.setInteractive(
       new Phaser.Geom.Rectangle(-CARD_W / 2, -CARD_H / 2, CARD_W, CARD_H),
       Phaser.Geom.Rectangle.Contains,
     );
-    scene.input.setDraggable(this as unknown as Phaser.GameObjects.GameObject);
-
-    // Pointed card pops to the front so its padded hit area wins over neighbours
     this.on('pointerover', () => { if (!this.inZone) this.setDepth(15); });
     this.on('pointerout',  () => { if (!this.inZone) this.setDepth(10); });
+  }
 
-    this.on('dragstart', () => {
-      this.floatTween?.pause();
-      this.setDepth(20);
-      this.drawCard(true);
-      scene.tweens.add({ targets: this, scaleX: 1.06, scaleY: 1.06, duration: 130, ease: 'Back.easeOut' });
-    });
+  startDrag() {
+    this.floatTween?.pause();
+    // Stop any in-progress position tweens (e.g. fly-in) without destroying floatTween
+    this.scene.tweens.getTweensOf(this as unknown as Phaser.GameObjects.GameObject)
+      .filter(t => t !== this.floatTween)
+      .forEach(t => t.stop());
+    this.setDepth(20);
+    this.drawCard(true);
+    this.scene.tweens.add({ targets: this, scaleX: 1.06, scaleY: 1.06, duration: 130, ease: 'Back.easeOut' });
+  }
 
-    this.on('drag', (_p: unknown, dx: number, dy: number) => {
-      this.x = dx;
-      this.y = dy;
-    });
-
-    this.on('dragend', () => {
-      this.setDepth(10);
-      this.drawCard(false);
-      scene.tweens.add({ targets: this, scaleX: 1, scaleY: 1, duration: 130, ease: 'Back.easeOut' });
-    });
+  endDrag() {
+    this.setDepth(10);
+    this.drawCard(false);
+    this.scene.tweens.add({ targets: this, scaleX: 1, scaleY: 1, duration: 130, ease: 'Back.easeOut' });
   }
 
   private startFloat() {

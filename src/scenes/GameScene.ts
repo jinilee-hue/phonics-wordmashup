@@ -42,6 +42,9 @@ export class GameScene extends Phaser.Scene {
   private hudTrackH = 0;
   private progressRatio = 0;
   private busy = false;
+  private dragCard: WordCard | null = null;
+  private dragOffX = 0;
+  private dragOffY = 0;
   private burst!: Phaser.GameObjects.Particles.ParticleEmitter;
   private settingsPanel?: Phaser.GameObjects.Container;
   private bgmOn = true;
@@ -1100,6 +1103,7 @@ export class GameScene extends Phaser.Scene {
   private startRound() {
     const { gw: GW, gh: GH } = this;
     this.busy = false;
+    this.dragCard = null;
     this.selectedLeft = undefined;
     this.selectedRight = undefined;
     this.leftCards = [];
@@ -1163,18 +1167,46 @@ export class GameScene extends Phaser.Scene {
   // ── Drag event wiring ─────────────────────────────────────────────
 
   private setupDrag() {
-    this.input.on('dragend', (_p: unknown, obj: Phaser.GameObjects.GameObject) => {
-      if (this.busy || !(obj instanceof WordCard)) return;
-      const card = obj as WordCard;
+    // Grab radius = visual card half-diagonal + finger slop, in CSS/game pixels.
+    // Distance-based selection means the card whose CENTER is closest to the touch
+    // always wins — no hit-zone overlap issues, works on touch and mouse equally.
+    const GRAB_R = Math.hypot(CARD_W / 2, CARD_H / 2) * 0.972 + 20; // ≈182px
+
+    this.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
+      if (this.busy || this.dragCard) return;
+
+      const cards = [...this.leftCards, ...this.rightCards].filter(c => !c.inZone);
+      let best: WordCard | null = null;
+      let bestDist = GRAB_R;
+      for (const c of cards) {
+        const d = Phaser.Math.Distance.Between(ptr.worldX, ptr.worldY, c.x, c.y);
+        if (d < bestDist) { bestDist = d; best = c; }
+      }
+      if (!best) return;
+
+      this.dragCard = best;
+      this.dragOffX = best.x - ptr.worldX;
+      this.dragOffY = best.y - ptr.worldY;
+      best.startDrag();
+    });
+
+    this.input.on('pointermove', (ptr: Phaser.Input.Pointer) => {
+      if (!this.dragCard || !ptr.isDown) return;
+      this.dragCard.x = ptr.worldX + this.dragOffX;
+      this.dragCard.y = ptr.worldY + this.dragOffY;
+    });
+
+    this.input.on('pointerup', () => {
+      if (!this.dragCard) return;
+      const card = this.dragCard;
+      this.dragCard = null;
+
       const isLeft  = this.leftCards.includes(card);
       const isRight = this.rightCards.includes(card);
-      if (!isLeft && !isRight) return;
-
       const dist = Phaser.Math.Distance.Between(card.x, card.y, this.cx, this.cy);
 
-      if (dist < this.zoneR + 30) {
+      if ((isLeft || isRight) && dist < this.zoneR + 30) {
         if (isLeft) {
-          // kick out previous occupant on left slot
           if (this.selectedLeft && this.selectedLeft !== card) this.selectedLeft.shakeBack();
           this.selectedLeft = card;
           card.snapToZone(this.cx - this.snapOff, this.cy);
@@ -1183,13 +1215,13 @@ export class GameScene extends Phaser.Scene {
           this.selectedRight = card;
           card.snapToZone(this.cx + this.snapOff, this.cy);
         }
-
         if (this.selectedLeft?.inZone && this.selectedRight?.inZone) {
           this.time.delayedCall(260, () => this.checkMatch());
         }
       } else if (!card.inZone) {
         card.resetPosition();
       }
+      card.endDrag();
     });
   }
 
