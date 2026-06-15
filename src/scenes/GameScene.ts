@@ -910,17 +910,10 @@ export class GameScene extends Phaser.Scene {
         glow.fillCircle(card.x, card.y, r);
       });
 
-      // Yellow dashed circle — 1:1 dash:gap ratio
+      // Solid circle ring
       const ring = this.add.graphics().setDepth(card.depth + 2);
-      const dashCount = 14, dashFrac = 0.5;
       ring.lineStyle(4, 0xFFFF00, 1);
-      for (let d = 0; d < dashCount; d++) {
-        const sa = (d / dashCount) * Math.PI * 2 - Math.PI / 2;
-        const ea = sa + (dashFrac / dashCount) * Math.PI * 2;
-        ring.beginPath();
-        ring.arc(card.x, card.y, ringR, sa, ea, false, 0.02);
-        ring.strokePath();
-      }
+      ring.strokeCircle(card.x, card.y, ringR);
 
       // Blink ring + glow together
       this.tweens.add({
@@ -934,10 +927,6 @@ export class GameScene extends Phaser.Scene {
         targets: card, scaleX: sx * 1.14, scaleY: sy * 1.14,
         duration: 200, ease: 'Back.easeOut', yoyo: true, repeat: 2,
       });
-
-      // Sparkle burst
-      this.burst.setPosition(card.x, card.y);
-      this.burst.explode(14);
     });
 
     // Down arrow pointing to zone
