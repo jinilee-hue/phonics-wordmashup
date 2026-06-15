@@ -353,12 +353,12 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Baloo 2', fontSize: `${sz(10)}px`, color: 'rgba(255,255,255,0.7)',
     }).setOrigin(0.5).setDepth(54);
 
-    // ── Settings button  (Figma: left:1204, top:13, size:62) ─────
+    // ── Settings button  (badge3 right=p(1008)+sz(152)=1160 + 20px gap → left=1180) ─────
     const sSz = sz(62);
-    const settingImg = this.add.image(p(1204) + sSz / 2, q(13) + sSz / 2, 'btn_setting').setDisplaySize(sSz, sSz).setDepth(51);
+    const settingImg = this.add.image(p(1180) + sSz / 2, q(13) + sSz / 2, 'btn_setting').setDisplaySize(sSz, sSz).setDepth(51);
     const settingHit = this.add.graphics().setDepth(55).setAlpha(0.001);
-    settingHit.fillRect(p(1204), q(13), sSz, sSz);
-    settingHit.setInteractive(new Phaser.Geom.Rectangle(p(1204), q(13), sSz, sSz), Phaser.Geom.Rectangle.Contains);
+    settingHit.fillRect(p(1180), q(13), sSz, sSz);
+    settingHit.setInteractive(new Phaser.Geom.Rectangle(p(1180), q(13), sSz, sSz), Phaser.Geom.Rectangle.Contains);
     settingHit.on('pointerdown', () => {
       this.tweens.add({ targets: settingImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.showSettings();
@@ -401,8 +401,8 @@ export class GameScene extends Phaser.Scene {
       if (cfg.kind === 'score') this.scoreText = numTxt;
       if (cfg.kind === 'coin')  this.coinText  = numTxt;
       if (cfg.kind === 'gem')   this.gemText   = numTxt;
-      // + button right-aligned: center 2px inset from badge right edge
-      this.add.image(bx + bW - sz(18), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
+      // + button: right edge = badge right edge (center at bW - half button width)
+      this.add.image(bx + bW - sz(16), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
     });
   }
 
