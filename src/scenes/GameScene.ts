@@ -353,12 +353,13 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Baloo 2', fontSize: `${sz(10)}px`, color: 'rgba(255,255,255,0.7)',
     }).setOrigin(0.5).setDepth(54);
 
-    // ── Settings button  (badge3 right=p(1008)+sz(152)=1160 + 20px gap → left=1180) ─────
+    // ── Settings button  (badge3 right edge + 20px gap, computed so it holds at any aspect ratio) ─────
     const sSz = sz(62);
-    const settingImg = this.add.image(p(1180) + sSz / 2, q(13) + sSz / 2, 'btn_setting').setDisplaySize(sSz, sSz).setDepth(51);
+    const sLeft = p(1008) + sz(152) + sz(20);
+    const settingImg = this.add.image(sLeft + sSz / 2, q(13) + sSz / 2, 'btn_setting').setDisplaySize(sSz, sSz).setDepth(51);
     const settingHit = this.add.graphics().setDepth(55).setAlpha(0.001);
-    settingHit.fillRect(p(1180), q(13), sSz, sSz);
-    settingHit.setInteractive(new Phaser.Geom.Rectangle(p(1180), q(13), sSz, sSz), Phaser.Geom.Rectangle.Contains);
+    settingHit.fillRect(sLeft, q(13), sSz, sSz);
+    settingHit.setInteractive(new Phaser.Geom.Rectangle(sLeft, q(13), sSz, sSz), Phaser.Geom.Rectangle.Contains);
     settingHit.on('pointerdown', () => {
       this.tweens.add({ targets: settingImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.showSettings();
