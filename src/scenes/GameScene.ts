@@ -241,8 +241,8 @@ export class GameScene extends Phaser.Scene {
       const cx = sz / 2, cy = sz / 2;
       const outerR  = sz * 0.42;  // circumscribed-circle radius
       const cornerR = sz * 0.16;  // corner rounding amount
-      // Vertices: right-pointing triangle at -30°, 90°, 210°
-      const pts = [-30, 90, 210].map(deg => ({
+      // Vertices: right-pointing triangle at 0°, 120°, 240°
+      const pts = [0, 120, 240].map(deg => ({
         x: cx + outerR * Math.cos(deg * Math.PI / 180),
         y: cy + outerR * Math.sin(deg * Math.PI / 180),
       }));
