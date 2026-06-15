@@ -1595,10 +1595,10 @@ export class GameScene extends Phaser.Scene {
     const thisRunResults = new Set(this.queue.map(p => p.result));
 
     // Count badge in title bar (right side, aligned to grid centre)
-    const countTxt = this.add.text(rCX, titleY, `${collected.size} / ${COMPOUND_PAIRS.length}`, {
+    const countTxt = this.add.text(rR, titleY, `${collected.size} / ${COMPOUND_PAIRS.length}`, {
       fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.42)}px`,
       color: '#8A43D6', fontStyle: 'bold',
-    }).setOrigin(0.5, 0.5);
+    }).setOrigin(1, 0.5);
     book.add(countTxt);
 
     // Grid dimensions — 3×2 (same as left page), bottom zone reserved for nav
