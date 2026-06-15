@@ -1008,12 +1008,6 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
-    // Down arrow pointing to zone
-    const arrow = this.add.text(this.cx, this.cy - this.zoneR - Math.round(this.gh * 0.06), '👇', {
-      fontSize: `${Math.round(Math.min(this.gw, this.gh) * 0.06)}px`,
-    }).setOrigin(0.5).setDepth(70);
-    this.tweens.add({ targets: arrow, y: arrow.y + Math.round(this.gh * 0.03), alpha: 0,
-      duration: 800, ease: 'Sine.easeIn', onComplete: () => arrow.destroy() });
   }
 
   private getCollected(): Set<string> {
