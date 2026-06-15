@@ -897,22 +897,22 @@ export class GameScene extends Phaser.Scene {
       const sx = card.scaleX, sy = card.scaleY;
       const cW = CARD_W * sx, cH = CARD_H * sy;
 
-      // Outer wide soft halo
-      const haloOut = this.add.graphics().setDepth(card.depth - 1).setAlpha(0.38);
-      haloOut.fillStyle(0xFFD700, 1);
-      haloOut.fillCircle(card.x, card.y, Math.max(cW, cH) * 0.95);
-      this.tweens.add({ targets: haloOut, alpha: 0, duration: 2000, ease: 'Cubic.easeIn',
-        onComplete: () => haloOut.destroy() });
-
-      // Inner bright halo — pulses then fades
-      const haloIn = this.add.graphics().setDepth(card.depth - 1).setAlpha(0.72);
-      haloIn.fillStyle(0xFFEE44, 1);
-      haloIn.fillCircle(card.x, card.y, Math.max(cW, cH) * 0.65);
+      // Yellow dashed circle that blinks
+      const ring = this.add.graphics().setDepth(card.depth + 2);
+      const ringR = Math.max(cW, cH) * 0.7;
+      const dashCount = 14, dashFrac = 0.58;
+      ring.lineStyle(4, 0xFFFF00, 1);
+      for (let d = 0; d < dashCount; d++) {
+        const sa = (d / dashCount) * Math.PI * 2 - Math.PI / 2;
+        const ea = sa + (dashFrac / dashCount) * Math.PI * 2;
+        ring.beginPath();
+        ring.arc(card.x, card.y, ringR, sa, ea, false, 0.02);
+        ring.strokePath();
+      }
       this.tweens.add({
-        targets: haloIn, alpha: 0.18,
-        duration: 420, ease: 'Sine.easeInOut', yoyo: true, repeat: 2,
-        onComplete: () => this.tweens.add({ targets: haloIn, alpha: 0, duration: 300,
-          onComplete: () => haloIn.destroy() }),
+        targets: ring, alpha: 0,
+        duration: 260, ease: 'Sine.easeInOut', yoyo: true, repeat: 4,
+        onComplete: () => ring.destroy(),
       });
 
       // Scale bounce ×3
