@@ -897,10 +897,22 @@ export class GameScene extends Phaser.Scene {
       const sx = card.scaleX, sy = card.scaleY;
       const cW = CARD_W * sx, cH = CARD_H * sy;
 
-      // Yellow dashed circle that blinks
-      const ring = this.add.graphics().setDepth(card.depth + 2);
+      // Glow layers behind the card (like Gravity Zone aura)
+      const glow = this.add.graphics().setDepth(card.depth - 2);
       const ringR = Math.max(cW, cH) * 0.7;
-      const dashCount = 14, dashFrac = 0.58;
+      [
+        { r: ringR * 1.5, a: 0.07 },
+        { r: ringR * 1.25, a: 0.13 },
+        { r: ringR * 1.0,  a: 0.20 },
+        { r: ringR * 0.78, a: 0.13 },
+      ].forEach(({ r, a }) => {
+        glow.fillStyle(0xFFFF00, a);
+        glow.fillCircle(card.x, card.y, r);
+      });
+
+      // Yellow dashed circle — 1:1 dash:gap ratio
+      const ring = this.add.graphics().setDepth(card.depth + 2);
+      const dashCount = 14, dashFrac = 0.5;
       ring.lineStyle(4, 0xFFFF00, 1);
       for (let d = 0; d < dashCount; d++) {
         const sa = (d / dashCount) * Math.PI * 2 - Math.PI / 2;
@@ -909,10 +921,12 @@ export class GameScene extends Phaser.Scene {
         ring.arc(card.x, card.y, ringR, sa, ea, false, 0.02);
         ring.strokePath();
       }
+
+      // Blink ring + glow together
       this.tweens.add({
-        targets: ring, alpha: 0,
+        targets: [ring, glow], alpha: 0,
         duration: 260, ease: 'Sine.easeInOut', yoyo: true, repeat: 4,
-        onComplete: () => ring.destroy(),
+        onComplete: () => { ring.destroy(); glow.destroy(); },
       });
 
       // Scale bounce ×3
