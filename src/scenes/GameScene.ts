@@ -89,8 +89,10 @@ export class GameScene extends Phaser.Scene {
     this.load.svg('badge_coin_main', './images/badge_coin_main.svg', { scale: 2 });
     this.load.svg('btn_plus',        './images/btn_plus.svg',        { scale: 2 });
     this.load.svg('btn_setting',     './images/btn_setting.svg',     { scale: 2 });
-    this.load.svg('btn_replay_bg',   './images/btn_replay_bg.svg',   { scale: 2 });
     this.load.image('btn_next_play', './images/btn_next_play.png');
+    this.load.svg('nav_blue_shadow', './images/nav_blue_shadow.svg', { scale: 2 });
+    this.load.svg('nav_blue_main',   './images/nav_blue_main.svg',   { scale: 2 });
+    this.load.svg('nav_blue_top',    './images/nav_blue_top.svg',    { scale: 2 });
     this.load.svg('nav_home_shadow', './images/nav_home_shadow.svg', { scale: 2 });
     this.load.svg('nav_home_main',   './images/nav_home_main.svg',   { scale: 2 });
     this.load.svg('nav_home_top',    './images/nav_home_top.svg',    { scale: 2 });
@@ -805,13 +807,11 @@ export class GameScene extends Phaser.Scene {
     };
 
     // ── Replay  (Figma left:301) ──────────────────────────────────
-    const replayImgs: Phaser.GameObjects.Image[] = [];
-    replayImgs.push(this.add.image(p(301 + 81), navCY, 'btn_replay_bg').setDisplaySize(p(162), q(62)).setDepth(40));
+    drawLayered(301, 162, 'nav_blue_shadow', 'nav_blue_main', 'nav_blue_top');
     const replayIcon = this.add.image(0, navCY, 'icon_replay').setDisplaySize(sz(30), sz(30)).setDepth(43);
-    replayImgs.push(replayIcon);
     centerInBtn(p(301 + 81), replayIcon, sz(30), 'Replay');
     makeHit(301, 162, () => {
-      btnPress(replayImgs);
+      btnPress([replayIcon]);
       this.time.delayedCall(100, () => {
         this.cameras.main.fadeOut(280, 0, 0, 0);
         this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
