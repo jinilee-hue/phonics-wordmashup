@@ -460,23 +460,30 @@ export class GameScene extends Phaser.Scene {
     div.lineBetween(-panelW / 2 + sz(24), -panelH / 2 + sz(72), panelW / 2 - sz(24), -panelH / 2 + sz(72));
     container.add(div);
 
-    // Toggle helper
+    // Toggle helper — iOS-style sliding knob, no emoji
     const makeToggle = (labelText: string, rowY: number, isOn: () => boolean, toggle: () => void) => {
       const label = this.add.text(-panelW / 2 + sz(40), rowY, labelText, {
         fontFamily: '"Noto Sans KR", "Baloo 2"', fontSize: `${sz(22)}px`, color: '#CCBBFF',
       }).setOrigin(0, 0.5);
 
       const tW = sz(88), tH = sz(44), tX = panelW / 2 - sz(56), tY = rowY;
+      const knobR = tH / 2 - sz(4);
       const trackBg = this.add.graphics();
-      const knob = this.add.text(0, 0, '', { fontSize: `${sz(26)}px` }).setOrigin(0.5);
+      const knobGfx = this.add.graphics();
 
       const refresh = () => {
         const on = isOn();
+        // Track
         trackBg.clear();
-        trackBg.fillStyle(on ? 0x7b63b7 : 0x444060, 1);
+        trackBg.fillStyle(on ? 0x9b6de8 : 0x3a3560, 1);
         trackBg.fillRoundedRect(tX - tW / 2, tY - tH / 2, tW, tH, tH / 2);
-        knob.setPosition(on ? tX + tW / 4 : tX - tW / 4, tY);
-        knob.setText(on ? '🔊' : '🔇');
+        // Knob shadow + white circle
+        const kx = on ? tX + tW / 2 - tH / 2 : tX - tW / 2 + tH / 2;
+        knobGfx.clear();
+        knobGfx.fillStyle(0x000000, 0.18);
+        knobGfx.fillCircle(kx, tY + sz(2), knobR);
+        knobGfx.fillStyle(0xFFFFFF, 1);
+        knobGfx.fillCircle(kx, tY, knobR);
       };
       refresh();
 
@@ -485,7 +492,7 @@ export class GameScene extends Phaser.Scene {
       hit.setInteractive(new Phaser.Geom.Rectangle(tX - tW / 2, tY - tH / 2, tW, tH), Phaser.Geom.Rectangle.Contains);
       hit.on('pointerdown', () => { toggle(); refresh(); });
 
-      container.add([label, trackBg, knob, hit]);
+      container.add([label, trackBg, knobGfx, hit]);
     };
 
     makeToggle('배경음악 (BGM)', -sz(30), () => this.bgmOn, () => { this.bgmOn = !this.bgmOn; gameAudio.unlock(); gameAudio.startBgm(); gameAudio.setBgmEnabled(this.bgmOn); });
