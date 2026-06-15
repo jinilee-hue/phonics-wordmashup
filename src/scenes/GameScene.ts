@@ -1628,12 +1628,13 @@ export class GameScene extends Phaser.Scene {
       if (isCollected) {
         const key = `card_${p.result}`;
         if (this.textures.exists(key)) {
-          const im = this.add.image(tx, ty, key).setDisplaySize(thumbW, thumbH).setAlpha(0);
-          if (isNew) im.setScale(0.2);
+          const im = this.add.image(tx, ty, key).setDisplaySize(thumbW, thumbH);
+          const tsx = im.scaleX, tsy = im.scaleY;
+          im.setScale(isNew ? tsx * 0.2 : tsx, isNew ? tsy * 0.2 : tsy).setAlpha(0);
           book.add(im);
           this.tweens.add({
             targets: im,
-            scaleX: 1, scaleY: 1, alpha: 1,
+            scaleX: tsx, scaleY: tsy, alpha: 1,
             duration: isNew ? 300 : 160,
             ease: isNew ? 'Back.easeOut' : 'Cubic.easeOut',
             delay: isNew ? 420 + i * 50 : 100 + i * 14,
