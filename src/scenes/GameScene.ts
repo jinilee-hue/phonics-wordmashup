@@ -862,28 +862,29 @@ export class GameScene extends Phaser.Scene {
     const s  = Math.min(GW / 1280, GH / 720);
     const sz = (f: number) => Math.round(f * s);
 
-    // ── Active visual ──────────────────────────────────────────────
-    this.micBtnLayers.forEach(l => l.setTint(0xbbffcc));
+    // ── Active visual: button breathes, icon tint only (no scale) ──
+    this.micBtnLayers.forEach(l => l.setTint(0x88ffaa));
     this.micBtnIcon.setTint(0x00ff66);
+    // Top layer alpha breathe — button itself glows without resizing icon
     this.micIconTween = this.tweens.add({
-      targets: this.micBtnIcon,
-      scaleX: 1.25, scaleY: 1.25,
-      duration: 420, ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
+      targets: this.micBtnLayers[1],
+      alpha: { from: 0.45, to: 1 },
+      duration: 500, ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
     });
 
-    // Pulsing ring around mic button
+    // Expanding ring radiating from button center
     const ringX = Math.round((473 + 81) * GW / 1280);
     const ringY = Math.round(GH * 677 / 720);
-    const ring  = this.add.graphics().setDepth(46);
+    const ring  = this.add.graphics().setDepth(39);
     this.micRing = ring;
     this.micRingTween = this.tweens.add({
-      targets: ring, alpha: { from: 0.85, to: 0 },
-      scaleX: { from: 1, to: 2.4 }, scaleY: { from: 1, to: 2.4 },
-      duration: 650, repeat: -1, ease: 'Sine.easeOut',
+      targets: ring, alpha: { from: 0.7, to: 0 },
+      scaleX: { from: 1, to: 2.6 }, scaleY: { from: 1, to: 2.6 },
+      duration: 700, repeat: -1, ease: 'Sine.easeOut',
       onUpdate: () => {
         ring.clear();
-        ring.lineStyle(sz(3), 0x44ff88, 1);
-        ring.strokeCircle(ringX, ringY, sz(34));
+        ring.lineStyle(sz(4), 0x44ff88, 1);
+        ring.strokeRoundedRect(ringX - sz(81), ringY - sz(29), sz(162), sz(58), sz(14));
       },
     });
 
@@ -892,9 +893,8 @@ export class GameScene extends Phaser.Scene {
       this.micRingTween?.stop();
       this.micRing?.destroy();
       this.micIconTween?.stop();
-      this.micBtnLayers.forEach(l => l.clearTint());
+      this.micBtnLayers.forEach(l => { l.clearTint(); l.setAlpha(1); });
       this.micBtnIcon.clearTint();
-      this.micBtnIcon.setScale(1);
     };
 
     // ── Speech Recognition ─────────────────────────────────────────
