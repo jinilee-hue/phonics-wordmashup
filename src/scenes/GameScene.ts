@@ -934,9 +934,9 @@ export class GameScene extends Phaser.Scene {
         }
       } else if (hasWord1 || hasWord2) {
         const found = hasWord1 ? pair.word1 : pair.word2;
-        this.showToast(`"${found}" 들었어요! 다른 단어도 말해봐요 🎤`);
+        this.showToast(`"${found}" 들었어요! 다른 단어도 말해봐요`);
       } else {
-        this.showToast('다시 한번 생각해서 말해볼까요? 🎤');
+        this.showToast('다시 한번 생각해서 말해볼까요?');
       }
     };
 
