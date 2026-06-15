@@ -54,6 +54,9 @@ export class GameScene extends Phaser.Scene {
   private micRingTween?: Phaser.Tweens.Tween;
   private micRing?: Phaser.GameObjects.Graphics;
   private micIconTween?: Phaser.Tweens.Tween;
+  private micWaveGfx?: Phaser.GameObjects.Graphics;
+  private micWaveTween?: Phaser.Tweens.Tween;
+  private micLabel?: Phaser.GameObjects.Text;
   private static readonly COLLECTED_KEY = 'phonics_collected_v1';
 
   constructor() { super({ key: 'Game' }); }
@@ -785,12 +788,13 @@ export class GameScene extends Phaser.Scene {
     };
 
     // Center icon+text pair within button: measures text width after creation
-    const centerInBtn = (btnCX: number, icon: Phaser.GameObjects.Image, iconW: number, label: string) => {
+    const centerInBtn = (btnCX: number, icon: Phaser.GameObjects.Image, iconW: number, label: string): Phaser.GameObjects.Text => {
       const txt = this.add.text(0, navCY, label, txtStyle).setOrigin(0, 0.5).setDepth(43);
       const gap = sz(10);
       const totalW = iconW + gap + txt.width;
       icon.setX(Math.round(btnCX - totalW / 2 + iconW / 2));
       txt.setX(Math.round(btnCX - totalW / 2 + iconW + gap));
+      return txt;
     };
 
     // ── Replay  (Figma left:301) ──────────────────────────────────
@@ -814,7 +818,7 @@ export class GameScene extends Phaser.Scene {
     const micTop  = this.add.image(micX + micW / 2, navCY, 'nav_green_top' ).setDisplaySize(micW, navH).setDepth(42);
     this.micBtnLayers = [micMain, micTop];
     this.micBtnIcon = this.add.image(0, navCY, 'icon_mic').setDisplaySize(sz(24), sz(34)).setDepth(43);
-    centerInBtn(p(473 + 81), this.micBtnIcon, sz(24), 'Mic');
+    this.micLabel = centerInBtn(p(473 + 81), this.micBtnIcon, sz(24), 'Mic');
     makeHit(473, 162, () => {
       btnPress([this.micBtnIcon]);
       this.startMic();
@@ -862,14 +866,40 @@ export class GameScene extends Phaser.Scene {
     const s  = Math.min(GW / 1280, GH / 720);
     const sz = (f: number) => Math.round(f * s);
 
-    // ── Active visual: button breathes, icon tint only (no scale) ──
+    // ── Active visual ──────────────────────────────────────────────
     this.micBtnLayers.forEach(l => l.setTint(0x88ffaa));
     this.micBtnIcon.setTint(0x00ff66);
-    // Top layer alpha breathe — button itself glows without resizing icon
+    this.micLabel?.setColor('#00ff66');
+
+    // Button top layer breathes
     this.micIconTween = this.tweens.add({
       targets: this.micBtnLayers[1],
       alpha: { from: 0.45, to: 1 },
       duration: 500, ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
+    });
+
+    // Sound-wave arcs behind mic icon (right-facing concentric arcs)
+    const waveGfx = this.add.graphics().setDepth(42);
+    this.micWaveGfx = waveGfx;
+    const ix = this.micBtnIcon.x;
+    const iy = this.micBtnIcon.y;
+    const arcA = -Math.PI * 0.42, arcB = Math.PI * 0.42;
+    const drawWave = (alpha: number) => {
+      waveGfx.clear();
+      [{ r: sz(13), a: alpha * 0.9, w: 2.5 },
+       { r: sz(19), a: alpha * 0.65, w: 2.0 },
+       { r: sz(25), a: alpha * 0.38, w: 1.5 }].forEach(({ r, a, w }) => {
+        waveGfx.lineStyle(w, 0x00ff66, a);
+        waveGfx.beginPath();
+        waveGfx.arc(ix, iy, r, arcA, arcB, false, 0.02);
+        waveGfx.strokePath();
+      });
+    };
+    drawWave(1);
+    this.micWaveTween = this.tweens.addCounter({
+      from: 100, to: 35, duration: 600,
+      ease: 'Sine.easeInOut', yoyo: true, repeat: -1,
+      onUpdate: t => drawWave((t.getValue() ?? 100) / 100),
     });
 
     // Expanding ring radiating from button center
@@ -893,8 +923,11 @@ export class GameScene extends Phaser.Scene {
       this.micRingTween?.stop();
       this.micRing?.destroy();
       this.micIconTween?.stop();
+      this.micWaveTween?.stop();
+      this.micWaveGfx?.destroy();
       this.micBtnLayers.forEach(l => { l.clearTint(); l.setAlpha(1); });
       this.micBtnIcon.clearTint();
+      this.micLabel?.setColor('#ffffff');
     };
 
     // ── Speech Recognition ─────────────────────────────────────────
