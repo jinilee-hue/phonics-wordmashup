@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { WordCard, CARD_W } from '../objects/WordCard';
+import { WordCard, CARD_W, CARD_H } from '../objects/WordCard';
 import { pickRoundPairs, COMPOUND_PAIRS, type CompoundPair } from '../data/compounds';
 import { gameAudio } from '../audio';
 
@@ -878,22 +878,59 @@ export class GameScene extends Phaser.Scene {
 
   private showHint() {
     if (this.busy) return;
-    [...this.leftCards, ...this.rightCards].forEach(card => {
-      if (!card?.active) return;
-      this.tweens.add({
-        targets: card,
-        y: card.y - Math.round(this.gh * 0.04),
-        duration: 180, ease: 'Back.easeOut', yoyo: true, repeat: 2,
+    const pair = this.queue[this.roundIndex];
+    const correctL = this.leftCards.find(c =>  c?.active && c.word === pair.word1);
+    const correctR = this.rightCards.find(c => c?.active && c.word === pair.word2);
+
+    // Dim wrong cards
+    [...this.leftCards, ...this.rightCards].forEach(c => {
+      if (!c?.active || c === correctL || c === correctR) return;
+      this.tweens.add({ targets: c, alpha: 0.25, duration: 220 });
+      this.time.delayedCall(2200, () => {
+        if (c?.active) this.tweens.add({ targets: c, alpha: 1, duration: 300 });
       });
-      const flash = this.add.graphics().setDepth(card.depth + 1);
-      flash.lineStyle(Math.round(Math.min(this.gw, this.gh) * 0.006), 0xFFD700, 0.9);
-      flash.strokeCircle(card.x, card.y, CARD_W * 0.6 * card.scaleX);
-      this.tweens.add({ targets: flash, alpha: 0, duration: 600, onComplete: () => flash.destroy() });
     });
+
+    // Highlight correct cards
+    [correctL, correctR].forEach(card => {
+      if (!card?.active) return;
+      const sx = card.scaleX, sy = card.scaleY;
+      const cW = CARD_W * sx, cH = CARD_H * sy;
+
+      // Outer soft gold halo (behind card)
+      const halo = this.add.graphics().setDepth(card.depth - 1).setAlpha(0.5);
+      halo.fillStyle(0xFFD700, 1);
+      halo.fillCircle(card.x, card.y, Math.max(cW, cH) * 0.74);
+      this.tweens.add({ targets: halo, alpha: 0, duration: 2000, ease: 'Cubic.easeIn',
+        onComplete: () => halo.destroy() });
+
+      // Gold border rotated to match card angle
+      const border = this.add.graphics().setDepth(card.depth + 2);
+      border.x = card.x; border.y = card.y; border.angle = card.angle;
+      border.lineStyle(5, 0xFFE040, 1);
+      border.strokeRoundedRect(-cW / 2 - 10, -cH / 2 - 10, cW + 20, cH + 20, 28);
+      border.lineStyle(2, 0xFFFFFF, 0.65);
+      border.strokeRoundedRect(-cW / 2 - 4, -cH / 2 - 4, cW + 8, cH + 8, 24);
+      this.tweens.add({ targets: border, alpha: 0, duration: 2000, ease: 'Cubic.easeIn',
+        onComplete: () => border.destroy() });
+
+      // Scale bounce ×3
+      this.tweens.add({
+        targets: card, scaleX: sx * 1.14, scaleY: sy * 1.14,
+        duration: 200, ease: 'Back.easeOut', yoyo: true, repeat: 2,
+      });
+
+      // Sparkle burst
+      this.burst.setPosition(card.x, card.y);
+      this.burst.explode(14);
+    });
+
+    // Down arrow pointing to zone
     const arrow = this.add.text(this.cx, this.cy - this.zoneR - Math.round(this.gh * 0.06), '👇', {
       fontSize: `${Math.round(Math.min(this.gw, this.gh) * 0.06)}px`,
     }).setOrigin(0.5).setDepth(70);
-    this.tweens.add({ targets: arrow, y: arrow.y + Math.round(this.gh * 0.03), alpha: 0, duration: 800, ease: 'Sine.easeIn', onComplete: () => arrow.destroy() });
+    this.tweens.add({ targets: arrow, y: arrow.y + Math.round(this.gh * 0.03), alpha: 0,
+      duration: 800, ease: 'Sine.easeIn', onComplete: () => arrow.destroy() });
   }
 
   private getCollected(): Set<string> {
