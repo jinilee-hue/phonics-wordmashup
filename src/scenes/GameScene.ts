@@ -910,10 +910,18 @@ export class GameScene extends Phaser.Scene {
         glow.fillCircle(card.x, card.y, r);
       });
 
-      // Solid circle ring
+      // Dotted circle ring — small dots arranged around the circumference
       const ring = this.add.graphics().setDepth(card.depth + 2);
-      ring.lineStyle(4, 0xFFFF00, 1);
-      ring.strokeCircle(card.x, card.y, ringR);
+      const dotCount = 16, dotR = 5;
+      ring.fillStyle(0xFFFF00, 1);
+      for (let d = 0; d < dotCount; d++) {
+        const angle = (d / dotCount) * Math.PI * 2 - Math.PI / 2;
+        ring.fillCircle(
+          card.x + Math.cos(angle) * ringR,
+          card.y + Math.sin(angle) * ringR,
+          dotR,
+        );
+      }
 
       // Blink ring + glow together
       this.tweens.add({
