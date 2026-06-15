@@ -46,6 +46,7 @@ export class GameScene extends Phaser.Scene {
   private settingsPanel?: Phaser.GameObjects.Container;
   private bgmOn = true;
   private sfxOn = true;
+  private static readonly COLLECTED_KEY = 'phonics_collected_v1';
 
   constructor() { super({ key: 'Game' }); }
 
@@ -865,6 +866,19 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: arrow, y: arrow.y + Math.round(this.gh * 0.03), alpha: 0, duration: 800, ease: 'Sine.easeIn', onComplete: () => arrow.destroy() });
   }
 
+  private getCollected(): Set<string> {
+    try {
+      const raw = localStorage.getItem(GameScene.COLLECTED_KEY);
+      return new Set(raw ? JSON.parse(raw) as string[] : []);
+    } catch { return new Set(); }
+  }
+
+  private addCollected(result: string) {
+    const set = this.getCollected();
+    set.add(result);
+    try { localStorage.setItem(GameScene.COLLECTED_KEY, JSON.stringify([...set])); } catch {}
+  }
+
   private showToast(msg: string) {
     const { gw: GW, gh: GH } = this;
     const s = Math.min(GW / 1280, GH / 720);
@@ -1426,6 +1440,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private onRoundWin(resultCont: Phaser.GameObjects.Container) {
+    this.addCollected(this.queue[this.roundIndex].result);
     this.animateProgressTo((this.roundIndex + 1) / ROUNDS);
 
     const prevScore = this.score, prevCoins = this.coins, prevGems = this.gems;
@@ -1563,57 +1578,95 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
-    // ── RIGHT page: level roadmap (winding path of numbered stages) ──
+    // ── RIGHT page: collection dokkam — all 30 compound cards ───────
     const rL = centerGap + pad, rR = pageX + pageFullW - pad;
-    const rCX = (rL + rR) / 2, rW = rR - rL;
+    const rCX = (rL + rR) / 2;
+    const collected = this.getCollected();
+    const thisRunResults = new Set(this.queue.map(p => p.result));
 
-    const heading = this.add.text(rCX, contentTop + bookH * 0.015, 'Stage Map', {
-      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.062)}px`,
+    const collHeading = this.add.text(rCX, contentTop + bookH * 0.01, 'My Collection', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.058)}px`,
       color: '#5A2E94', fontStyle: 'bold',
     }).setOrigin(0.5);
-    book.add(heading);
+    book.add(collHeading);
 
-    const N = ROUNDS;
-    const mapTop = contentTop + bookH * 0.08;
-    const rowH = (contentBottom - mapTop) / N;
-    const leftX = rL + rW * 0.26;
-    const rightX = rR - rW * 0.26;
-    const nodeR = Math.min(rowH * 0.42, rW * 0.18);
-    const nodeX = (i: number) => (i % 2 === 0 ? leftX : rightX);
-    const nodeY = (i: number) => mapTop + rowH * (i + 0.5);
+    const countTxt = this.add.text(rCX, contentTop + bookH * 0.072, `${collected.size} / ${COMPOUND_PAIRS.length}`, {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(bookH * 0.036)}px`,
+      color: '#8A43D6', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    book.add(countTxt);
 
-    // winding dotted path connecting the stages (drawn behind the nodes)
-    const pathG = this.add.graphics();
-    book.add(pathG);
-    pathG.fillStyle(0x8A43D6, 0.45);
-    for (let i = 0; i < N - 1; i++) {
-      const x1 = nodeX(i), y1 = nodeY(i), x2 = nodeX(i + 1), y2 = nodeY(i + 1);
-      const steps = 8;
-      for (let k = 1; k < steps; k++) {
-        const t = k / steps;
-        pathG.fillCircle(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, Math.max(2, nodeR * 0.12));
+    const COLS = 5, ROWS = 6;
+    const gridTop = contentTop + Math.round(bookH * 0.115);
+    const gridW = rR - rL;
+    const gridH = contentBottom - gridTop;
+    const cellW = gridW / COLS;
+    const cellH = gridH / ROWS;
+    const thumbW = Math.round(cellW * 0.84);
+    const thumbH = Math.round(cellH * 0.84);
+
+    // All slot backgrounds drawn at once
+    const slotG = this.add.graphics();
+    book.add(slotG);
+    COMPOUND_PAIRS.forEach((_, i) => {
+      const col = i % COLS, row = Math.floor(i / COLS);
+      const tx = rL + cellW * (col + 0.5);
+      const ty = gridTop + cellH * (row + 0.5);
+      slotG.fillStyle(0xC8B8DC, 0.45);
+      slotG.fillRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
+      slotG.lineStyle(1, 0x9A7DB8, 0.3);
+      slotG.strokeRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
+    });
+
+    COMPOUND_PAIRS.forEach((p, i) => {
+      const col = i % COLS, row = Math.floor(i / COLS);
+      const tx = rL + cellW * (col + 0.5);
+      const ty = gridTop + cellH * (row + 0.5);
+      const isCollected = collected.has(p.result);
+      const isNew = thisRunResults.has(p.result);
+
+      if (isCollected) {
+        const key = `card_${p.result}`;
+        if (this.textures.exists(key)) {
+          const im = this.add.image(tx, ty, key).setDisplaySize(thumbW, thumbH).setAlpha(0);
+          if (isNew) im.setScale(0.2);
+          book.add(im);
+          this.tweens.add({
+            targets: im,
+            scaleX: 1, scaleY: 1, alpha: 1,
+            duration: isNew ? 300 : 160,
+            ease: isNew ? 'Back.easeOut' : 'Cubic.easeOut',
+            delay: isNew ? 420 + i * 50 : 100 + i * 14,
+            onComplete: isNew ? () => { this.burst.setPosition(CX + tx, bookCY + ty); this.burst.explode(6); } : undefined,
+          });
+        } else {
+          // Fallback: emoji mini-card
+          const fbg = this.add.graphics();
+          fbg.fillStyle(0xFFE9A0, 1);
+          fbg.fillRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
+          fbg.lineStyle(1.5, 0xB8860B, 0.8);
+          fbg.strokeRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
+          const et = this.add.text(tx, ty, p.iconResult, {
+            fontSize: `${Math.round(thumbH * 0.44)}px`,
+          }).setOrigin(0.5).setAlpha(0);
+          book.add([fbg, et]);
+          this.tweens.add({
+            targets: [fbg, et], alpha: 1,
+            duration: 180, ease: 'Cubic.easeOut', delay: 100 + i * 14,
+          });
+        }
+      } else {
+        // Not yet collected — lock overlay with "?"
+        const lockOverlay = this.add.graphics();
+        lockOverlay.fillStyle(0x8A6BB8, 0.18);
+        lockOverlay.fillRoundedRect(tx - thumbW / 2, ty - thumbH / 2, thumbW, thumbH, 4);
+        const lockTxt = this.add.text(tx, ty, '?', {
+          fontFamily: '"Baloo 2"', fontSize: `${Math.round(thumbH * 0.46)}px`,
+          color: '#8A6BB8', fontStyle: 'bold',
+        }).setOrigin(0.5).setAlpha(0.55);
+        book.add([lockOverlay, lockTxt]);
       }
-    }
-
-    // numbered stage nodes — all completed this run; the last one highlighted
-    for (let i = 0; i < N; i++) {
-      const isLast = i === N - 1;
-      const node = this.add.container(nodeX(i), nodeY(i)).setScale(0).setAlpha(0);
-      const ng = this.add.graphics();
-      ng.fillStyle(isLast ? 0xFFC83A : 0xFFFFFF, 1); ng.fillCircle(0, 0, nodeR);
-      ng.fillStyle(0x8A43D6, 1); ng.fillCircle(0, 0, nodeR * 0.82);
-      ng.fillStyle(0xFFFFFF, 0.25); ng.fillCircle(-nodeR * 0.26, -nodeR * 0.3, nodeR * 0.3);
-      const num = this.add.text(0, 0, `${i + 1}`, {
-        fontFamily: '"Baloo 2"', fontSize: `${Math.round(nodeR * 0.95)}px`,
-        color: '#FFFFFF', fontStyle: 'bold',
-      }).setOrigin(0.5);
-      node.add([ng, num]);
-      book.add(node);
-      this.tweens.add({
-        targets: node, scaleX: 1, scaleY: 1, alpha: 1,
-        duration: 300, ease: 'Back.easeOut', delay: 360 + i * 130,
-      });
-    }
+    });
 
     // Book entrance
     this.tweens.add({ targets: book, alpha: 1, scaleX: 1, scaleY: 1, duration: 360, ease: 'Back.easeOut' });
