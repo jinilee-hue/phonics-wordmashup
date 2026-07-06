@@ -2035,10 +2035,8 @@ export class GameScene extends Phaser.Scene {
       const highlight = row.kind === kind;
       const rad = Math.round(rowH * 0.16);
       const rg = this.add.graphics();
-      // 선택된 행만 흰색 배경 + 컬러 라인, 나머지는 투명
+      // 모든 행 배경 투명. 선택된 행만 컬러 라인(테두리)으로 표시.
       if (highlight) {
-        rg.fillStyle(0xFFFFFF, 1);
-        rg.fillRoundedRect(rowX, top, rowW, rowH, rad);
         rg.lineStyle(Math.max(2, Math.round(s * 3)), row.color, 1);
         rg.strokeRoundedRect(rowX, top, rowW, rowH, rad);
       }
