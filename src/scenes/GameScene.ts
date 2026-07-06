@@ -116,7 +116,8 @@ export class GameScene extends Phaser.Scene {
     this.gw = this.scale.width;
     this.gh = this.scale.height;
     this.cx = Math.round(this.gw / 2);
-    this.cy = Math.round(this.gh * 0.44);
+    // 카드/그래비티존 전체를 아래로 30(디자인px, 해상도 비례) 이동
+    this.cy = Math.round(this.gh * 0.44) + Math.round(this.gh / 720 * 30);
     this.zoneR   = Math.round(Math.min(this.gw, this.gh) * 0.19);
     this.snapOff = Math.round(this.zoneR * 0.65);
 
@@ -1164,7 +1165,7 @@ export class GameScene extends Phaser.Scene {
 
     const makeCard = (figX: number, figY: number, angle: number, slotIdx: number, word: string, icon: string, side: 'left' | 'right') => {
       const targetX  = pf(figX);
-      const targetY  = qf(figY);
+      const targetY  = qf(figY + 30);   // 전체 아래로 30(그래비티존과 동일 이동)
       const startX   = side === 'left' ? -CARD_W : GW + CARD_W;
       const leftKey  = `card_left_${word}`;
       const rightKey = `card_right_${word}`;
