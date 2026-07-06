@@ -1976,8 +1976,8 @@ export class GameScene extends Phaser.Scene {
     dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, GW, GH), Phaser.Geom.Rectangle.Contains);
     layer.add(dim);
 
-    const panelW = Math.round(Math.min(GW * 0.6, GH * 1.2));
-    const panelH = Math.round(Math.min(GH * 0.66, panelW * 0.72));
+    const panelW = Math.round(Math.min(GW * 0.62, GH * 1.15));
+    const panelH = Math.round(Math.min(GH * 0.66, panelW * 0.78));
     const r = Math.round(Math.min(panelW, panelH) * 0.05);
     const panel = this.add.container(CX, CY);
     layer.add(panel);
@@ -1991,6 +1991,14 @@ export class GameScene extends Phaser.Scene {
     const pageX = -panelW / 2 + inset, pageY = -panelH / 2 + inset;
     const pageW = panelW - inset * 2, pageH = panelH - inset * 2;
     g.fillStyle(0xF4EEFF, 1); g.fillRoundedRect(pageX, pageY, pageW, pageH, Math.round(r * 0.5));
+    // 가운데 접힘선(도감과 동일 틀)
+    for (let k = 5; k >= 0; k--) {
+      const fw = Math.round(panelW * 0.012) * (k + 1);
+      g.fillStyle(0x3A2168, 0.045 * (1 - k / 6));
+      g.fillRect(-fw, pageY, fw * 2, pageH);
+    }
+    g.fillStyle(0x3A2168, 0.14); g.fillRect(-1, pageY, 2, pageH);
+    g.fillStyle(0xFFFFFF, 0.5);  g.fillRect(1, pageY, 1, pageH);
     panel.add(g);
     const swallow = this.add.zone(0, 0, panelW, panelH).setInteractive();
     swallow.on('pointerdown', () => {});
@@ -2013,32 +2021,41 @@ export class GameScene extends Phaser.Scene {
       fontFamily: '"Baloo 2"', fontSize: `${Math.round(closeR * 1.1)}px`, color: '#FFFFFF', fontStyle: 'bold',
     }).setOrigin(0.5));
 
-    // 3개 재화 행
-    const rowTop = pageY + titleH + Math.round(panelH * 0.04);
-    const rowH = (pageY + pageH - pad - rowTop) / rows.length;
-    const iconSz = Math.round(rowH * 0.44);
+    // 3개 재화 행 — 행 간 간격 + 각 행 내부 상단 여백
+    const rowTop = pageY + titleH + Math.round(panelH * 0.06);
+    const rowGap = Math.round(panelH * 0.035);
+    const areaH = (pageY + pageH - pad) - rowTop;
+    const rowH = (areaH - rowGap * (rows.length - 1)) / rows.length;
+    const iconSz = Math.round(rowH * 0.4);
     const rowX = pageX + pad;
+    const rowW = pageW - pad * 2;
     rows.forEach((row, i) => {
-      const cy = rowTop + rowH * (i + 0.5);
+      const top = rowTop + i * (rowH + rowGap);
+      const cy = top + rowH / 2;
       const highlight = row.kind === kind;
+      const rad = Math.round(rowH * 0.16);
       const rg = this.add.graphics();
-      rg.fillStyle(highlight ? 0xE7D8FF : 0xEDE6FA, 1);
-      rg.fillRoundedRect(rowX, cy - rowH * 0.42, pageW - pad * 2, rowH * 0.84, Math.round(rowH * 0.14));
-      if (highlight) { rg.lineStyle(Math.max(2, Math.round(s * 3)), row.color, 1); rg.strokeRoundedRect(rowX, cy - rowH * 0.42, pageW - pad * 2, rowH * 0.84, Math.round(rowH * 0.14)); }
+      rg.fillStyle(0xFFFFFF, 1);                       // 깔끔한 흰색 배경
+      rg.fillRoundedRect(rowX, top, rowW, rowH, rad);
+      // 선택 행은 컬러 라인만, 나머지는 옅은 회보라 라인
+      if (highlight) rg.lineStyle(Math.max(2, Math.round(s * 3)), row.color, 1);
+      else           rg.lineStyle(Math.max(1, Math.round(s * 1.5)), 0xE3DAF2, 1);
+      rg.strokeRoundedRect(rowX, top, rowW, rowH, rad);
       panel.add(rg);
 
       const icx = rowX + Math.round(rowH * 0.5);
       panel.add(this.add.image(icx, cy, row.icon).setDisplaySize(iconSz, iconSz));
-      const textL = icx + Math.round(rowH * 0.55);
-      panel.add(this.add.text(textL, cy - rowH * 0.28, row.name, {
-        fontFamily: '"Baloo 2"', fontSize: `${Math.round(rowH * 0.22)}px`,
+      const textL = icx + Math.round(rowH * 0.5);
+      // 타이틀은 행 상단에서 여백을 두고 배치
+      panel.add(this.add.text(textL, top + rowH * 0.26, row.name, {
+        fontFamily: '"Baloo 2"', fontSize: `${Math.round(rowH * 0.2)}px`,
         color: Phaser.Display.Color.IntegerToColor(row.color).rgba, fontStyle: 'bold',
       }).setOrigin(0, 0.5));
-      panel.add(this.add.text(textL, cy + Math.round(rowH * 0.02), `모으기  ${row.earn}`, {
-        fontFamily: '"Inter","Baloo 2"', fontSize: `${Math.round(rowH * 0.135)}px`, color: '#5A4A7A',
+      panel.add(this.add.text(textL, top + rowH * 0.56, `모으기   ${row.earn}`, {
+        fontFamily: '"Inter","Baloo 2"', fontSize: `${Math.round(rowH * 0.125)}px`, color: '#5A4A7A',
       }).setOrigin(0, 0.5));
-      panel.add(this.add.text(textL, cy + Math.round(rowH * 0.26), `쓰기      ${row.spend}`, {
-        fontFamily: '"Inter","Baloo 2"', fontSize: `${Math.round(rowH * 0.135)}px`, color: '#8A5AB8',
+      panel.add(this.add.text(textL, top + rowH * 0.79, `쓰기       ${row.spend}`, {
+        fontFamily: '"Inter","Baloo 2"', fontSize: `${Math.round(rowH * 0.125)}px`, color: '#8A5AB8',
       }).setOrigin(0, 0.5));
     });
 
