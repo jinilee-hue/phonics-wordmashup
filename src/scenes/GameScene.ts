@@ -302,34 +302,42 @@ export class GameScene extends Phaser.Scene {
     const HUD_K = 1.2;                                  // 상단 HUD 확대 배율
     const sz = (f: number)  => Math.round(f  * s * HUD_K); // uniform size (HUD 확대)
 
-    // ── 공통 드롭섀도(모든 상단 요소 동일) — 버튼 baked shadow(dy3/blur1.5/black30%) 톤에 맞춤 ──
-    const topY = q(13);              // 모든 상단 요소 top (Figma: 13)
-    const H = sz(62);               // 모든 상단 요소 height (Figma: 62)
-    const midY = topY + sz(31);     // 세로 중심
+    // ── 상단 HUD 공통 규격 ──────────────────────────────────────────
+    // 모든 에셋의 "몸통" 높이는 58단위. 단, 버튼(btn_back/btn_setting)만
+    // viewBox 68(하단에 그림자 여백 10)이라 같은 크기로 그리면 몸통이 작게 렌더됨.
+    // → 모든 요소의 "보이는 몸통 높이"를 bodyH(sz58)로 통일(무왜곡).
+    const topY = q(13);                          // 모든 몸통 top (Figma:13)
+    const bodyH = sz(58);                        // 공통 몸통 높이
+    const midY = topY + Math.round(bodyH / 2);   // 몸통 세로 중심
+    const bSz = sz(62);                          // 버튼 몸통 폭(레이아웃/히트존용)
+    // 버튼: viewBox 68에 몸통 58 → 정사각 sz(68)로 그려 몸통을 정확히 bodyH로,
+    // 몸통 중심(viewBox y=29)을 midY에 맞추는 y보정.
+    const btnDisp = Math.round(bodyH * 68 / 58);
+    const btnCyOff = Math.round(btnDisp * (0.5 - 29 / 68));
+    // 공통 드롭섀도 — 버튼 baked shadow(dy3/blur1.5/black30%) 톤에 맞춤
     const drawTopShadow = (x: number, w: number, r: number) => {
       const g = this.add.graphics().setDepth(49);
       g.fillStyle(0x000000, 0.10);
-      g.fillRoundedRect(x - sz(1), topY + sz(2), w + sz(2), H + sz(2), r + sz(1));
+      g.fillRoundedRect(x - sz(1), topY + sz(2), w + sz(2), bodyH + sz(2), r + sz(1));
       g.fillStyle(0x000000, 0.16);
-      g.fillRoundedRect(x, topY + sz(3), w, H, r);
+      g.fillRoundedRect(x, topY + sz(3), w, bodyH, r);
     };
 
     // ── Back button (Figma: left:14, top:13, size:62) — baked shadow ──
-    const bSz = H;
-    const backImg = this.add.image(p(14) + bSz / 2, topY + bSz / 2, 'btn_back_main').setDisplaySize(bSz, bSz).setDepth(51);
+    const backImg = this.add.image(p(14) + bSz / 2, midY + btnCyOff, 'btn_back_main').setDisplaySize(btnDisp, btnDisp).setDepth(51);
 
     // Back button hit zone (invisible)
     const hitG = this.add.graphics().setDepth(55).setAlpha(0.001);
-    hitG.fillRect(p(14), topY, bSz, bSz);
-    hitG.setInteractive(new Phaser.Geom.Rectangle(p(14), topY, bSz, bSz), Phaser.Geom.Rectangle.Contains);
+    hitG.fillRect(p(14), topY, bSz, bodyH);
+    hitG.setInteractive(new Phaser.Geom.Rectangle(p(14), topY, bSz, bodyH), Phaser.Geom.Rectangle.Contains);
     hitG.on('pointerdown', () => {
       this.tweens.add({ targets: backImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
     });
 
-    // ── Compound Book pill (Figma: x88 top13 w241 h62) — 높이 62, 버튼과 동일 ──
-    const pillW = sz(241), pillH = H;
+    // ── Compound Book pill (Figma: x88 top13 w241) — 몸통 높이 bodyH, 버튼과 동일 ──
+    const pillW = sz(241), pillH = bodyH;
     const pillTop = topY, pillCY = midY;
     const pillX = p(14) + bSz + sz(12);   // 뒤로가기 버튼과 간격 sz(12)
 
@@ -361,21 +369,20 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(54);
 
     // ── 오른쪽 그룹: 배지 3 + 설정. 오른쪽 끝 기준(오른쪽 여백 = 왼쪽 back), 간격 sz(12) ──
-    const sSz = H;
-    const bW = sz(152), bH = H;
+    const bW = sz(152), bH = bodyH;
     const gap = sz(12);
     const margin = Math.round(14 * sx);          // 좌측 back 버튼 여백과 대칭
-    const sLeft = GW - margin - sSz;             // 설정 버튼 좌측
+    const sLeft = GW - margin - bSz;             // 설정 버튼 좌측(몸통 폭 bSz)
     const b3L = sLeft - gap - bW;
     const b2L = b3L - gap - bW;
     const b1L = b2L - gap - bW;
     const badgeX = [b1L, b2L, b3L];
 
-    // 설정 버튼 (baked shadow)
-    const settingImg = this.add.image(sLeft + sSz / 2, topY + sSz / 2, 'btn_setting').setDisplaySize(sSz, sSz).setDepth(51);
+    // 설정 버튼 (baked shadow) — 버튼과 동일 규격(sz68 정사각 + y보정)
+    const settingImg = this.add.image(sLeft + bSz / 2, midY + btnCyOff, 'btn_setting').setDisplaySize(btnDisp, btnDisp).setDepth(51);
     const settingHit = this.add.graphics().setDepth(55).setAlpha(0.001);
-    settingHit.fillRect(sLeft, topY, sSz, sSz);
-    settingHit.setInteractive(new Phaser.Geom.Rectangle(sLeft, topY, sSz, sSz), Phaser.Geom.Rectangle.Contains);
+    settingHit.fillRect(sLeft, topY, bSz, bodyH);
+    settingHit.setInteractive(new Phaser.Geom.Rectangle(sLeft, topY, bSz, bodyH), Phaser.Geom.Rectangle.Contains);
     settingHit.on('pointerdown', () => {
       this.tweens.add({ targets: settingImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.showSettings();
