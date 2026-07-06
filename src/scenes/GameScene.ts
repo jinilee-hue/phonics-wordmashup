@@ -12,6 +12,7 @@ export class GameScene extends Phaser.Scene {
   private cx = 0;
   private cy = 0;
   private collectionOpen = false;   // 도감 팝업 열림 가드
+  private infoOpen = false;         // 재화 안내 모달 열림 가드
   private overButton = false;       // 인터랙티브 버튼 위 hover 여부(커서 유지용)
   private zoneR = 0;
   private snapOff = 0;
@@ -446,8 +447,16 @@ export class GameScene extends Phaser.Scene {
       if (cfg.kind === 'coin')  this.coinText  = numTxt;
       if (cfg.kind === 'gem')   this.gemText   = numTxt;
 
-      // + 버튼 (세로 중앙, 우측 끝)
-      this.add.image(bx + bW - sz(13), midY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
+      // + 버튼 (세로 중앙, 우측 끝) — 클릭 시 재화 정책 안내 모달
+      const plusImg = this.add.image(bx + bW - sz(13), midY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
+      const phX = bx + bW - sz(31), phY = midY - sz(18);
+      const plusHit = this.add.graphics().setDepth(55).setAlpha(0.001);
+      plusHit.fillRect(phX, phY, sz(38), sz(36));
+      plusHit.setInteractive({ hitArea: new Phaser.Geom.Rectangle(phX, phY, sz(38), sz(36)), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
+      plusHit.on('pointerdown', () => {
+        this.tweens.add({ targets: plusImg, scaleX: 0.85, scaleY: 0.85, duration: 80, yoyo: true, ease: 'Back.easeIn' });
+        this.showCurrencyInfo(cfg.kind);
+      });
     });
   }
 
@@ -1938,6 +1947,111 @@ export class GameScene extends Phaser.Scene {
     book.setScale(0.85);
     this.tweens.add({ targets: layer, alpha: 1, duration: 200 });
     this.tweens.add({ targets: book, scaleX: 1, scaleY: 1, duration: 320, ease: 'Back.easeOut' });
+  }
+
+  // ── 재화 정책 안내 모달 (+ 버튼 클릭 시) ──────────────────────────
+  private showCurrencyInfo(kind: 'score' | 'coin' | 'gem') {
+    if (this.infoOpen) return;
+    this.infoOpen = true;
+
+    const { gw: GW, gh: GH } = this;
+    const s = Math.min(GW / 1280, GH / 720);
+    const CX = Math.round(GW / 2), CY = Math.round(GH / 2);
+
+    const rows: { kind: string; icon: string; name: string; color: number; earn: string; spend: string }[] = [
+      { kind: 'score', icon: 'icon_star',  name: '별 Star',   color: 0xF5B301,
+        earn: '정답을 맞히면 +10  ·  첫 시도 정답은 보너스!',
+        spend: '힌트 사용 시 −5  ·  별 100개 → 동전 1개로 교환' },
+      { kind: 'coin',  icon: 'icon_money', name: '동전 Coin',  color: 0xE08A00,
+        earn: '별 100개로 구매  ·  한 세트(6판) 완주 보너스',
+        spend: '동전 1개 = 재도전 기회 1회 (틀려도 계속!)' },
+      { kind: 'gem',   icon: 'icon_gem',   name: '보석 Gem',   color: 0x2E9BE0,
+        earn: '세트 완주  ·  연속 정답(콤보) 보너스로 +1',
+        spend: '보석 1개 = 못 모은 카드를 보기로 소환 (도감 채우기)' },
+    ];
+
+    const layer = this.add.container(0, 0).setDepth(82).setAlpha(0);
+    const dim = this.add.graphics();
+    dim.fillStyle(0x150B33, 0.82); dim.fillRect(0, 0, GW, GH);
+    dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, GW, GH), Phaser.Geom.Rectangle.Contains);
+    layer.add(dim);
+
+    const panelW = Math.round(Math.min(GW * 0.6, GH * 1.2));
+    const panelH = Math.round(Math.min(GH * 0.66, panelW * 0.72));
+    const r = Math.round(Math.min(panelW, panelH) * 0.05);
+    const panel = this.add.container(CX, CY);
+    layer.add(panel);
+
+    const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.4); g.fillRoundedRect(-panelW / 2 + 8, -panelH / 2 + 14, panelW, panelH, r);
+    g.fillStyle(0x6B49A8, 1);   g.fillRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, r);
+    g.lineStyle(Math.max(3, Math.round(panelW * 0.006)), 0x3A2168, 1);
+    g.strokeRoundedRect(-panelW / 2, -panelH / 2, panelW, panelH, r);
+    const inset = Math.round(panelW * 0.035);
+    const pageX = -panelW / 2 + inset, pageY = -panelH / 2 + inset;
+    const pageW = panelW - inset * 2, pageH = panelH - inset * 2;
+    g.fillStyle(0xF4EEFF, 1); g.fillRoundedRect(pageX, pageY, pageW, pageH, Math.round(r * 0.5));
+    panel.add(g);
+    const swallow = this.add.zone(0, 0, panelW, panelH).setInteractive();
+    swallow.on('pointerdown', () => {});
+    panel.add(swallow);
+
+    const pad = Math.round(panelW * 0.035);
+    const titleH = Math.round(panelH * 0.1);
+    const titleY = pageY + pad + titleH * 0.4;
+    panel.add(this.add.text(pageX + pad, titleY, '포인트 & 혜택 안내', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.5)}px`, color: '#5A2E94', fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+
+    // 닫기 X
+    const closeR = Math.round(titleH * 0.42);
+    const closeX = pageX + pageW - pad - closeR, closeY = titleY;
+    const closeG = this.add.graphics();
+    closeG.fillStyle(0x8A43D6, 1); closeG.fillCircle(closeX, closeY, closeR);
+    panel.add(closeG);
+    panel.add(this.add.text(closeX, closeY, '✕', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(closeR * 1.1)}px`, color: '#FFFFFF', fontStyle: 'bold',
+    }).setOrigin(0.5));
+
+    // 3개 재화 행
+    const rowTop = pageY + titleH + Math.round(panelH * 0.04);
+    const rowH = (pageY + pageH - pad - rowTop) / rows.length;
+    const iconSz = Math.round(rowH * 0.44);
+    const rowX = pageX + pad;
+    rows.forEach((row, i) => {
+      const cy = rowTop + rowH * (i + 0.5);
+      const highlight = row.kind === kind;
+      const rg = this.add.graphics();
+      rg.fillStyle(highlight ? 0xE7D8FF : 0xEDE6FA, 1);
+      rg.fillRoundedRect(rowX, cy - rowH * 0.42, pageW - pad * 2, rowH * 0.84, Math.round(rowH * 0.14));
+      if (highlight) { rg.lineStyle(Math.max(2, Math.round(s * 3)), row.color, 1); rg.strokeRoundedRect(rowX, cy - rowH * 0.42, pageW - pad * 2, rowH * 0.84, Math.round(rowH * 0.14)); }
+      panel.add(rg);
+
+      const icx = rowX + Math.round(rowH * 0.5);
+      panel.add(this.add.image(icx, cy, row.icon).setDisplaySize(iconSz, iconSz));
+      const textL = icx + Math.round(rowH * 0.55);
+      panel.add(this.add.text(textL, cy - rowH * 0.28, row.name, {
+        fontFamily: '"Baloo 2"', fontSize: `${Math.round(rowH * 0.22)}px`,
+        color: Phaser.Display.Color.IntegerToColor(row.color).rgba, fontStyle: 'bold',
+      }).setOrigin(0, 0.5));
+      panel.add(this.add.text(textL, cy + Math.round(rowH * 0.02), `모으기  ${row.earn}`, {
+        fontFamily: '"Inter","Baloo 2"', fontSize: `${Math.round(rowH * 0.135)}px`, color: '#5A4A7A',
+      }).setOrigin(0, 0.5));
+      panel.add(this.add.text(textL, cy + Math.round(rowH * 0.26), `쓰기      ${row.spend}`, {
+        fontFamily: '"Inter","Baloo 2"', fontSize: `${Math.round(rowH * 0.135)}px`, color: '#8A5AB8',
+      }).setOrigin(0, 0.5));
+    });
+
+    const close = () => {
+      this.tweens.add({ targets: layer, alpha: 0, duration: 200, onComplete: () => { layer.destroy(); this.infoOpen = false; } });
+    };
+    dim.on('pointerdown', close);
+    closeG.setInteractive({ hitArea: new Phaser.Geom.Circle(closeX, closeY, closeR * 1.4), hitAreaCallback: Phaser.Geom.Circle.Contains, useHandCursor: true });
+    closeG.on('pointerdown', close);
+
+    panel.setScale(0.85);
+    this.tweens.add({ targets: layer, alpha: 1, duration: 200 });
+    this.tweens.add({ targets: panel, scaleX: 1, scaleY: 1, duration: 320, ease: 'Back.easeOut' });
   }
 
   private showFinale() {
