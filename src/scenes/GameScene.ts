@@ -677,8 +677,8 @@ export class GameScene extends Phaser.Scene {
       g.lineStyle(w as number, PINK, a as number);
       g.strokeCircle(CX, CY, ZONE_R);
     });
-    // white-hot inner edge — brighter base highlight
-    g.lineStyle(1, 0xFFFFFF, 0.7);
+    // 메인 링 하이라이트 — 바깥 핑크 글로우와 어울리는 옅은 핑크
+    g.lineStyle(1, 0xFFA6D5, 0.8);
     g.strokeCircle(CX, CY, ZONE_R);
 
     // ── Far cyan halo rings ───────────────────────────────────────
@@ -769,8 +769,8 @@ export class GameScene extends Phaser.Scene {
       g.lineStyle(w as number, PINK, (a as number) * (0.4 + heat * 0.85));
       g.strokeCircle(CX, CY, ZONE_R * 0.52);
     });
-    // White-hot core line on the main ring at the pulse peak
-    g.lineStyle(2, WHITE, 0.25 + heat * 0.6);
+    // 메인 링 코어 라인(펄스 피크) — 옅은 핑크로 통일
+    g.lineStyle(2, 0xFFA6D5, 0.25 + heat * 0.6);
     g.strokeCircle(CX, CY, ZONE_R);
 
     // ── Light sweep — bright comets racing around the main ring ─────
