@@ -2039,7 +2039,8 @@ export class GameScene extends Phaser.Scene {
       leftCont.removeAll(true);
       const rr = row(sel);
       const lcx = (leftL + leftR) / 2;
-      const bigIcon = Math.round(Math.min(leftW * 0.4, (contentBottom - contentTop) * 0.32));
+      // 아이콘 원본이 저해상도(≈57px)라 과확대 방지 위해 최대 78px로 제한(깨짐 방지)
+      const bigIcon = Math.round(Math.min(leftW * 0.36, (contentBottom - contentTop) * 0.3, 78));
       let y = contentTop + Math.round(bigIcon * 0.6);
       leftCont.add(this.add.image(lcx, y, rr.icon).setDisplaySize(bigIcon, bigIcon));
       y += Math.round(bigIcon * 0.72);
@@ -2065,9 +2066,10 @@ export class GameScene extends Phaser.Scene {
       addBlock('쓰기', rr.spend);
     };
 
-    // 우측 목록 (탭하여 선택 전환)
+    // 우측 목록 (탭하여 선택 전환) — 닫기(X) 버튼 아래에서 시작해 겹침 방지
+    const rightTop = Math.max(contentTop, closeY + closeR + Math.round(panelH * 0.045));
     const rItemGap = Math.round(panelH * 0.03);
-    const rItemH = (contentBottom - contentTop - rItemGap * (rows.length - 1)) / rows.length;
+    const rItemH = (contentBottom - rightTop - rItemGap * (rows.length - 1)) / rows.length;
     const rIconSz = Math.round(rItemH * 0.5);
     const itemGfx: { k: string; g: Phaser.GameObjects.Graphics; top: number }[] = [];
     const redrawItems = () => {
@@ -2080,7 +2082,7 @@ export class GameScene extends Phaser.Scene {
       });
     };
     rows.forEach((rr, i) => {
-      const top = contentTop + i * (rItemH + rItemGap);
+      const top = rightTop + i * (rItemH + rItemGap);
       const cy = top + rItemH / 2;
       const ig = this.add.graphics();
       panel.add(ig);
