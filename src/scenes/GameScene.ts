@@ -611,21 +611,7 @@ export class GameScene extends Phaser.Scene {
     // Use zoneR to derive font size so it fills the circle regardless of screen size
     const fs = Math.round(this.zoneR * 0.52);
     const makeNeonText = (x: number, y: number, label: string, glowHex: string) => {
-      // Outer bloom layer — breathes with the ring (ADD blend = glows into the rings behind)
-      const outer = this.add.text(x, y, label, {
-        fontFamily: '"Baloo 2", sans-serif', fontSize: `${fs}px`,
-        color: glowHex, fontStyle: 'bold',
-        shadow: { offsetX: 0, offsetY: 0, color: glowHex, blur: 40, fill: true },
-      }).setOrigin(0.5).setDepth(7).setScale(1.5).setAlpha(0.18).setBlendMode(Phaser.BlendModes.ADD);
-      this.neonGlowLayers.push({ obj: outer, base: 0.18 });
-      // Mid bloom layer
-      const mid = this.add.text(x, y, label, {
-        fontFamily: '"Baloo 2", sans-serif', fontSize: `${fs}px`,
-        color: glowHex, fontStyle: 'bold',
-        shadow: { offsetX: 0, offsetY: 0, color: glowHex, blur: 24, fill: true },
-      }).setOrigin(0.5).setDepth(7).setScale(1.2).setAlpha(0.28).setBlendMode(Phaser.BlendModes.ADD);
-      this.neonGlowLayers.push({ obj: mid, base: 0.28 });
-      // Crisp white core
+      // 흰색 코어만 렌더(자체 네온 글로우 유지). 배경에 겹쳐 보이던 확대 블룸 복제 레이어 제거.
       const core = this.add.text(x, y, label, {
         fontFamily: '"Baloo 2", sans-serif', fontSize: `${fs}px`,
         color: '#FFFFFF', fontStyle: 'bold',
