@@ -299,7 +299,8 @@ export class GameScene extends Phaser.Scene {
 
     const p  = (fx: number) => Math.round(fx * sx);   // x pixel
     const q  = (fy: number) => Math.round(fy * sy);   // y pixel
-    const sz = (f: number)  => Math.round(f  * s);    // uniform size
+    const HUD_K = 1.2;                                  // 상단 HUD 확대 배율
+    const sz = (f: number)  => Math.round(f  * s * HUD_K); // uniform size (HUD 확대)
 
     // ── Back button  (Figma: left:14, top:13, size:62) ───────────
     const bSz = sz(62);
@@ -353,9 +354,19 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Baloo 2', fontSize: `${sz(10)}px`, color: 'rgba(255,255,255,0.7)',
     }).setOrigin(0.5).setDepth(54);
 
-    // ── Settings button  (badge3 right edge + 20px gap, computed so it holds at any aspect ratio) ─────
+    // ── 오른쪽 그룹: 배지 3 + 설정. 오른쪽 끝 기준 정렬(오른쪽 여백 = 왼쪽 back 여백), 간격 균일 ──
     const sSz = sz(62);
-    const sLeft = p(1008) + sz(152) + sz(20);
+    const bW = sz(152), bH = sz(53);
+    const ibH = sz(37);
+    const gap = sz(12);                          // 배지/설정 균일 간격
+    const margin = Math.round(14 * sx);          // 좌측 back 버튼 여백과 대칭
+    const sLeft = GW - margin - sSz;             // 설정 버튼 좌측
+    const b3L = sLeft - gap - bW;
+    const b2L = b3L - gap - bW;
+    const b1L = b2L - gap - bW;
+    const badgeX = [b1L, b2L, b3L];
+
+    // 설정 버튼
     const settingImg = this.add.image(sLeft + sSz / 2, q(13) + sSz / 2, 'btn_setting').setDisplaySize(sSz, sSz).setDepth(51);
     const settingHit = this.add.graphics().setDepth(55).setAlpha(0.001);
     settingHit.fillRect(sLeft, q(13), sSz, sSz);
@@ -366,19 +377,15 @@ export class GameScene extends Phaser.Scene {
     });
 
     // ── Currency badges ───────────────────────────────────────────
-    type BadgeCfg = { bL: number; bgKey: string; iconKey: string; kind: 'score' | 'coin' | 'gem' };
-    const badges: BadgeCfg[] = [
-      { bL: 688,  bgKey: 'badge_star_main', iconKey: 'icon_star',  kind: 'score' },
-      { bL: 848,  bgKey: 'badge_coin_main', iconKey: 'icon_money', kind: 'coin'  },
-      { bL: 1008, bgKey: 'badge_coin_main', iconKey: 'icon_gem',   kind: 'gem'   },
+    const badges: { bgKey: string; iconKey: string; kind: 'score' | 'coin' | 'gem' }[] = [
+      { bgKey: 'badge_star_main', iconKey: 'icon_star',  kind: 'score' },
+      { bgKey: 'badge_coin_main', iconKey: 'icon_money', kind: 'coin'  },
+      { bgKey: 'badge_coin_main', iconKey: 'icon_gem',   kind: 'gem'   },
     ];
-    // bW=sz(152) uniform scaling matches bH=sz(53) so aspect ratio holds at any screen size
-    const bW = sz(152), bH = sz(53);
-    const ibH = sz(37);
     const bTop = q(13), bCY = bTop + sz(27);
 
-    badges.forEach(cfg => {
-      const bx = p(cfg.bL);
+    badges.forEach((cfg, i) => {
+      const bx = badgeX[i];
 
       // Drop shadow — two-pass soft shadow matching btn_back_main style
       const badgeShadow = this.add.graphics().setDepth(49);
