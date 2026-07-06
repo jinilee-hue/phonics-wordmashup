@@ -359,7 +359,7 @@ export class GameScene extends Phaser.Scene {
     this.add.image(pillX + pillW / 2, pillCY, 'hud_bar_pill').setDisplaySize(pillW, pillH).setDepth(51);
 
     // Book icon on pill (Figma: offset x10, h56) — 세로 중앙
-    this.add.image(pillX + sz(33), pillCY, 'icon_book').setDisplaySize(sz(42), sz(50)).setDepth(53);
+    this.iconShadow(this.add.image(pillX + sz(33), pillCY, 'icon_book').setDisplaySize(sz(42), sz(50)).setDepth(53));
 
     // "Compound Book" label — 상단
     this.add.text(pillX + sz(76), pillTop + sz(9), 'Compound Book', {
@@ -437,7 +437,7 @@ export class GameScene extends Phaser.Scene {
 
       // 아이콘 (세로 중앙, 왼쪽으로 살짝 튀어나오게)
       const iconSz = sz(46);
-      this.add.image(bx + sz(8) + iconSz / 2, midY, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53);
+      this.iconShadow(this.add.image(bx + sz(8) + iconSz / 2, midY, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53));
 
       const numTxt = this.add.text(bx + sz(107), midY, '0', {
         fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(22)}px`,
@@ -1778,6 +1778,12 @@ export class GameScene extends Phaser.Scene {
   // ── Finale ────────────────────────────────────────────────────────
 
   // ── 모은 단어 도감 (책 아이콘 클릭 시 언제든 열림) ─────────────────
+  // 아이콘에 자연스러운 드롭섀도(preFX) 적용
+  private iconShadow<T extends Phaser.GameObjects.Image>(img: T): T {
+    img.preFX?.addShadow(0, 1, 0.12, 1, 0x000000, 10, 0.45);
+    return img;
+  }
+
   private showCollection() {
     if (this.collectionOpen) return;
     this.collectionOpen = true;
@@ -1830,7 +1836,7 @@ export class GameScene extends Phaser.Scene {
     const titleH = Math.round(bookH * 0.11);
     const titleY = pageY + pad + titleH * 0.4;
     const ibH = Math.round(titleH * 0.62), ibW = Math.round(ibH * 46 / 56);
-    book.add(this.add.image(pageX + pad + ibW / 2, titleY, 'icon_book').setDisplaySize(ibW, ibH));
+    book.add(this.iconShadow(this.add.image(pageX + pad + ibW / 2, titleY, 'icon_book').setDisplaySize(ibW, ibH)));
     book.add(this.add.text(pageX + pad + ibW + Math.round(s * 10), titleY, 'Compound Book', {
       fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.5)}px`,
       color: '#5A2E94', fontStyle: 'bold',
@@ -2046,7 +2052,7 @@ export class GameScene extends Phaser.Scene {
       const iw = ar >= 1 ? bigBox : Math.round(bigBox * ar);
       const ih = ar >= 1 ? Math.round(bigBox / ar) : bigBox;
       let y = contentTop + Math.round(bigBox * 0.6);
-      leftCont.add(this.add.image(lcx, y, rr.icon).setDisplaySize(iw, ih));
+      leftCont.add(this.iconShadow(this.add.image(lcx, y, rr.icon).setDisplaySize(iw, ih)));
       y += Math.round(bigBox * 0.72);
       leftCont.add(this.add.text(lcx, y, rr.name, {
         fontFamily: '"Baloo 2"', fontSize: `${Math.round(leftW * 0.11)}px`, color: rgba(rr.color), fontStyle: 'bold',
@@ -2092,7 +2098,7 @@ export class GameScene extends Phaser.Scene {
       panel.add(ig);
       itemGfx.push({ k: rr.kind, g: ig, top });
       const icx = rightL + Math.round(rItemH * 0.55);
-      panel.add(this.add.image(icx, cy, rr.icon).setDisplaySize(rIconSz, rIconSz));
+      panel.add(this.iconShadow(this.add.image(icx, cy, rr.icon).setDisplaySize(rIconSz, rIconSz)));
       panel.add(this.add.text(icx + Math.round(rItemH * 0.5), cy, rr.name, {
         fontFamily: '"Baloo 2"', fontSize: `${Math.round(rItemH * 0.3)}px`, color: rgba(rr.color), fontStyle: 'bold',
       }).setOrigin(0, 0.5));
@@ -2163,7 +2169,7 @@ export class GameScene extends Phaser.Scene {
     const titleY = pageY + pad + titleH * 0.4;
     const ibH = Math.round(titleH * 0.62);
     const ibW = Math.round(ibH * 46 / 56);
-    const bookIcon = this.add.image(pageX + pad + ibW / 2, titleY, 'icon_book').setDisplaySize(ibW, ibH);
+    const bookIcon = this.iconShadow(this.add.image(pageX + pad + ibW / 2, titleY, 'icon_book').setDisplaySize(ibW, ibH));
     const title = this.add.text(pageX + pad + ibW + Math.round(s * 10), titleY, 'Compound Book', {
       fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.5)}px`,
       color: '#5A2E94', fontStyle: 'bold',
