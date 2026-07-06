@@ -306,8 +306,11 @@ export class GameScene extends Phaser.Scene {
     const bSz = sz(62);
     const backImg = this.add.image(p(14) + bSz / 2, q(13) + bSz / 2, 'btn_back_main').setDisplaySize(bSz, bSz).setDepth(51);
 
-    // Book icon centered on pill (pillCY = q(13)+sz(27))
-    this.add.image(p(98 + 23), q(13) + sz(27), 'icon_book').setDisplaySize(sz(40), sz(44)).setDepth(53);
+    // Pill left edge: 뒤로가기 버튼과의 간격을 우측 버튼 간격(sz(12))과 동일하게
+    const pillX = p(14) + bSz + sz(12);
+
+    // Book icon on pill left (pillCY = q(13)+sz(27))
+    this.add.image(pillX + sz(33), q(13) + sz(27), 'icon_book').setDisplaySize(sz(40), sz(44)).setDepth(53);
 
     // Back button hit zone (invisible)
     const hitG = this.add.graphics().setDepth(55).setAlpha(0.001);
@@ -322,15 +325,9 @@ export class GameScene extends Phaser.Scene {
     // ── Progress bar pill — height=sz(53) matches btn_back_main visual area; width=sz(241) for uniform scaling ─
     const pillW = sz(241), pillH = sz(53);
     const pillTop = q(13), pillCY = pillTop + sz(27);
-    const pillX = p(88);
+    // (pillX declared above, next to the back button)
 
-    // Drop shadow — two-pass soft shadow like btn_back_main built-in filter
-    const pillShadow = this.add.graphics().setDepth(49);
-    pillShadow.fillStyle(0x000000, 0.13);
-    pillShadow.fillRoundedRect(pillX - sz(1), pillTop + sz(5), pillW + sz(2), pillH + sz(1), sz(17));
-    pillShadow.fillStyle(0x000000, 0.22);
-    pillShadow.fillRoundedRect(pillX + sz(1), pillTop + sz(4), pillW, pillH, sz(15));
-
+    // 그림자 없음(요청) — 알약 배경만 렌더
     this.add.image(pillX + pillW / 2, pillCY, 'hud_bar_pill').setDisplaySize(pillW, pillH).setDepth(51);
 
     // Track inner — lower portion of pill
@@ -387,13 +384,7 @@ export class GameScene extends Phaser.Scene {
     badges.forEach((cfg, i) => {
       const bx = badgeX[i];
 
-      // Drop shadow — two-pass soft shadow matching btn_back_main style
-      const badgeShadow = this.add.graphics().setDepth(49);
-      badgeShadow.fillStyle(0x000000, 0.13);
-      badgeShadow.fillRoundedRect(bx - sz(1), bTop + sz(5), bW + sz(2), bH + sz(1), sz(17));
-      badgeShadow.fillStyle(0x000000, 0.22);
-      badgeShadow.fillRoundedRect(bx + sz(1), bTop + sz(4), bW, bH, sz(15));
-
+      // 그림자 없음(요청) — 배지 배경만 렌더
       this.add.image(bx + bW / 2, bCY, cfg.bgKey).setDisplaySize(bW, bH).setDepth(51);
       // Dark bar spans from under icon to just before the + button
       const ibL = bx + sz(27), ibT = bTop + sz(8), ibW = bW - sz(35);
