@@ -316,19 +316,22 @@ export class GameScene extends Phaser.Scene {
     const btnDisp = Math.round(bodyH * 68 / 58);
     const btnCyOff = Math.round(btnDisp * (0.5 - 29 / 68));
     // 공통 드롭섀도 — 버튼 baked shadow(dy3/blur1.5/black30%) 톤에 맞춤
+    // 상단 4종(back/setting/pill/badge) 공통 그림자 — 완전히 동일하게 이 함수 하나로만 그림.
+    // 동심 라운드렉트를 낮은 알파로 겹쳐 부드러운 falloff, 박스 중심에서 아래로 dy 오프셋.
     const drawTopShadow = (x: number, w: number, r: number) => {
-      // 버튼 baked 드롭섀도(dy3/blur1.5/black0.3)와 동일한 "부드럽게 사라지는" 그림자.
-      // 가우시안 근사: 동심 라운드렉트를 낮은 알파로 여러 겹 쌓아 가장자리 falloff 생성.
       const g = this.add.graphics().setDepth(48);
-      const N = 7;
+      const cx = x + w / 2;
+      const cy = midY + sz(4);          // dy 오프셋(아래로)
+      const N = 6;
       for (let i = N; i >= 1; i--) {
-        const sp = Math.round((sz(6) * i) / N);   // 바깥 겹일수록 크게(0~sz6)
-        g.fillStyle(0x000000, 0.05);
-        g.fillRoundedRect(x - sp, topY + sz(6), w + sp * 2, bodyH + sp, r + sp);
+        const sp = Math.round((sz(4) * i) / N);   // 0~sz4 동심 확산
+        g.fillStyle(0x000000, 0.06);
+        g.fillRoundedRect(cx - w / 2 - sp, cy - bodyH / 2 - sp, w + sp * 2, bodyH + sp * 2, r + sp);
       }
     };
 
-    // ── Back button (Figma: left:14, top:13, size:62) — baked shadow ──
+    // ── Back button (Figma: left:14, top:13, size:62) — 공통 그림자 함수 사용 ──
+    drawTopShadow(p(14), bSz, sz(16));
     const backImg = this.add.image(p(14) + bSz / 2, midY + btnCyOff, 'btn_back_main').setDisplaySize(btnDisp, btnDisp).setDepth(51);
 
     // Back button hit zone (invisible)
@@ -385,7 +388,8 @@ export class GameScene extends Phaser.Scene {
     const b1L = b2L - gap - bW;
     const badgeX = [b1L, b2L, b3L];
 
-    // 설정 버튼 (baked shadow) — 버튼과 동일 규격(sz68 정사각 + y보정)
+    // 설정 버튼 — 공통 그림자 함수 사용(back/pill/badge와 동일)
+    drawTopShadow(sLeft, bSz, sz(16));
     const settingImg = this.add.image(sLeft + bSz / 2, midY + btnCyOff, 'btn_setting').setDisplaySize(btnDisp, btnDisp).setDepth(51);
     const settingHit = this.add.graphics().setDepth(55).setAlpha(0.001);
     settingHit.fillRect(sLeft, topY, bSz, bodyH);
