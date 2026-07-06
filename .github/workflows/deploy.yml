@@ -22,8 +22,12 @@ jobs:
 
       - run: npm run build
 
+      # Prevent GitHub's Jekyll build from parsing bundled JS/SVG (contains {{ }} / {% %})
+      - run: touch dist/.nojekyll
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
+          enable_jekyll: false
