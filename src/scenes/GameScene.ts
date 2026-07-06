@@ -2039,11 +2039,15 @@ export class GameScene extends Phaser.Scene {
       leftCont.removeAll(true);
       const rr = row(sel);
       const lcx = (leftL + leftR) / 2;
-      // 아이콘 원본이 저해상도(≈57px)라 과확대 방지 위해 최대 78px로 제한(깨짐 방지)
-      const bigIcon = Math.round(Math.min(leftW * 0.36, (contentBottom - contentTop) * 0.3, 78));
-      let y = contentTop + Math.round(bigIcon * 0.6);
-      leftCont.add(this.add.image(lcx, y, rr.icon).setDisplaySize(bigIcon, bigIcon));
-      y += Math.round(bigIcon * 0.72);
+      // 고해상도 아이콘 → 크게 표시(최대 150px), 원본 비율 유지
+      const bigBox = Math.round(Math.min(leftW * 0.42, (contentBottom - contentTop) * 0.34, 150));
+      const src = this.textures.get(rr.icon).getSourceImage() as { width: number; height: number };
+      const ar = (src.width || 1) / (src.height || 1);
+      const iw = ar >= 1 ? bigBox : Math.round(bigBox * ar);
+      const ih = ar >= 1 ? Math.round(bigBox / ar) : bigBox;
+      let y = contentTop + Math.round(bigBox * 0.6);
+      leftCont.add(this.add.image(lcx, y, rr.icon).setDisplaySize(iw, ih));
+      y += Math.round(bigBox * 0.72);
       leftCont.add(this.add.text(lcx, y, rr.name, {
         fontFamily: '"Baloo 2"', fontSize: `${Math.round(leftW * 0.11)}px`, color: rgba(rr.color), fontStyle: 'bold',
       }).setOrigin(0.5));
