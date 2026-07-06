@@ -342,6 +342,8 @@ export class GameScene extends Phaser.Scene {
     const pillX = p(14) + bSz + sz(12);   // 뒤로가기 버튼과 간격 sz(12)
 
     drawTopShadow(pillX, pillW, sz(16));
+    // #3F2586 보라색 밑단(3D 그림자 박스) — 메인보다 sz(4) 아래로
+    this.add.image(pillX + pillW / 2, pillCY + sz(4), 'hud_bar_main').setDisplaySize(pillW, pillH).setDepth(50);
     this.add.image(pillX + pillW / 2, pillCY, 'hud_bar_pill').setDisplaySize(pillW, pillH).setDepth(51);
 
     // Book icon on pill (Figma: offset x10, h56) — 세로 중앙
@@ -398,8 +400,9 @@ export class GameScene extends Phaser.Scene {
     badges.forEach((cfg, i) => {
       const bx = badgeX[i];
 
-      // 공통 그림자 → 배경
+      // #6A92BE 파란색 밑단(3D 그림자 박스) — 메인보다 sz(4) 아래로 + 부드러운 그림자
       drawTopShadow(bx, bW, sz(16));
+      this.add.image(bx + bW / 2, midY + sz(4), 'badge_shadow').setDisplaySize(bW, bH).setDepth(50);
       this.add.image(bx + bW / 2, midY, cfg.bgKey).setDisplaySize(bW, bH).setDepth(51);
 
       // 숫자용 어두운 인셋 바 (세로 중앙)
