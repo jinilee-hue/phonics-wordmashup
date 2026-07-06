@@ -1136,7 +1136,7 @@ export class GameScene extends Phaser.Scene {
     ].sort(() => Math.random() - 0.5);
 
     const s = Math.min(GW / 1280, GH / 720);   // 화면 균일 배율
-    const CARD_SCALE = 0.972 * s;              // 카드도 화면 크기에 맞춰 스케일(태블릿 대응)
+    const CARD_SCALE = 0.972 * 0.8 * s;        // 카드 크기 80%로 축소 + 화면 균일 배율(태블릿 대응)
     // Figma-matched staggered positions (Figma canvas: 1280×720)
     // Values are card CENTER coordinates
     const pf = (fx: number) => Math.round(fx * GW / 1280);
@@ -1179,7 +1179,7 @@ export class GameScene extends Phaser.Scene {
     // Distance-based selection means the card whose CENTER is closest to the touch
     // always wins — no hit-zone overlap issues, works on touch and mouse equally.
     const s = Math.min(this.gw / 1280, this.gh / 720);
-    const GRAB_R = (Math.hypot(CARD_W / 2, CARD_H / 2) * 0.972 + 20) * s; // 화면 배율 반영
+    const GRAB_R = (Math.hypot(CARD_W / 2, CARD_H / 2) * 0.972 * 0.8 + 20) * s; // 카드 80% 축소 반영
 
     this.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
       if (this.busy || this.dragCard) return;
