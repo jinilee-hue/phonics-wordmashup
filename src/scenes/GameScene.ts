@@ -792,7 +792,7 @@ export class GameScene extends Phaser.Scene {
     const q  = (fy: number) => Math.round(fy * sy);
     const sz = (f: number)  => Math.round(f  * s);
 
-    const navY = q(648), navH = q(58), shadowOff = q(4);
+    const navY = q(648), navH = sz(58), shadowOff = sz(4); // 높이는 균일 배율(sz)로 → 상단 HUD와 높이 일치
     const navCY = navY + Math.round(navH / 2);
     const txtStyle = {
       fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(24)}px`,
@@ -1128,7 +1128,8 @@ export class GameScene extends Phaser.Scene {
       { word: distract[3].word2, icon: distract[3].icon2 },
     ].sort(() => Math.random() - 0.5);
 
-    const CARD_SCALE = 0.972;
+    const s = Math.min(GW / 1280, GH / 720);   // 화면 균일 배율
+    const CARD_SCALE = 0.972 * s;              // 카드도 화면 크기에 맞춰 스케일(태블릿 대응)
     // Figma-matched staggered positions (Figma canvas: 1280×720)
     // Values are card CENTER coordinates
     const pf = (fx: number) => Math.round(fx * GW / 1280);
@@ -1170,7 +1171,8 @@ export class GameScene extends Phaser.Scene {
     // Grab radius = visual card half-diagonal + finger slop, in CSS/game pixels.
     // Distance-based selection means the card whose CENTER is closest to the touch
     // always wins — no hit-zone overlap issues, works on touch and mouse equally.
-    const GRAB_R = Math.hypot(CARD_W / 2, CARD_H / 2) * 0.972 + 20; // ≈182px
+    const s = Math.min(this.gw / 1280, this.gh / 720);
+    const GRAB_R = (Math.hypot(CARD_W / 2, CARD_H / 2) * 0.972 + 20) * s; // 화면 배율 반영
 
     this.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
       if (this.busy || this.dragCard) return;
