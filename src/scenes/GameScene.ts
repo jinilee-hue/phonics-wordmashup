@@ -1173,6 +1173,7 @@ export class GameScene extends Phaser.Scene {
         ? (this.textures.exists(leftKey)  ? leftKey  : undefined)
         : (this.textures.exists(rightKey) ? rightKey : undefined);
       const card = new WordCard(this, startX, targetY, word, icon, true, bgKey);
+      card.baseScale = CARD_SCALE;   // 상호작용 트윈의 기준 배율(클릭 시 커지는 버그 방지)
       card.setScale(CARD_SCALE);
       card.setAngle(angle);
       card.baseX = targetX;

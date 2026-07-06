@@ -19,6 +19,7 @@ export class WordCard extends Phaser.GameObjects.Container {
   private imgMode: boolean;
   baseX: number;
   baseY: number;
+  public baseScale = 1;   // 카드 기본 배율(CARD_SCALE) — 모든 스케일 트윈의 기준
   public inZone = false;
   public selected = false;
   private floatTween!: Phaser.Tweens.Tween;
@@ -79,13 +80,13 @@ export class WordCard extends Phaser.GameObjects.Container {
   select() {
     this.selected = true;
     this.drawCard();
-    this.scene.tweens.add({ targets: this, scaleX: 1.08, scaleY: 1.08, duration: 120, ease: 'Back.easeOut' });
+    this.scene.tweens.add({ targets: this, scaleX: this.baseScale * 1.08, scaleY: this.baseScale * 1.08, duration: 120, ease: 'Back.easeOut' });
   }
 
   deselect() {
     this.selected = false;
     this.drawCard();
-    this.scene.tweens.add({ targets: this, scaleX: 1, scaleY: 1, duration: 120, ease: 'Back.easeIn' });
+    this.scene.tweens.add({ targets: this, scaleX: this.baseScale, scaleY: this.baseScale, duration: 120, ease: 'Back.easeIn' });
   }
 
   private setupTap() {
@@ -169,13 +170,13 @@ export class WordCard extends Phaser.GameObjects.Container {
       .forEach(t => t.stop());
     this.setDepth(20);
     this.drawCard(true);
-    this.scene.tweens.add({ targets: this, scaleX: 1.06, scaleY: 1.06, duration: 130, ease: 'Back.easeOut' });
+    this.scene.tweens.add({ targets: this, scaleX: this.baseScale * 1.06, scaleY: this.baseScale * 1.06, duration: 130, ease: 'Back.easeOut' });
   }
 
   endDrag() {
     this.setDepth(10);
     this.drawCard(false);
-    this.scene.tweens.add({ targets: this, scaleX: 1, scaleY: 1, duration: 130, ease: 'Back.easeOut' });
+    this.scene.tweens.add({ targets: this, scaleX: this.baseScale, scaleY: this.baseScale, duration: 130, ease: 'Back.easeOut' });
   }
 
   private startFloat() {
@@ -195,7 +196,7 @@ export class WordCard extends Phaser.GameObjects.Container {
     this.inZone = false;
     this.scene.tweens.add({
       targets: this,
-      x: this.baseX, y: this.baseY, scaleX: 1, scaleY: 1,
+      x: this.baseX, y: this.baseY, scaleX: this.baseScale, scaleY: this.baseScale,
       duration: 400, ease: 'Back.easeOut',
     });
   }
@@ -205,7 +206,7 @@ export class WordCard extends Phaser.GameObjects.Container {
     this.inZone = true;
     this.scene.tweens.add({
       targets: this,
-      x: tx, y: ty, scaleX: 1.15, scaleY: 1.15,
+      x: tx, y: ty, scaleX: this.baseScale * 1.15, scaleY: this.baseScale * 1.15,
       duration: 300, ease: 'Back.easeOut',
     });
   }
@@ -213,7 +214,7 @@ export class WordCard extends Phaser.GameObjects.Container {
   pulseOut() {
     this.scene.tweens.add({
       targets: this,
-      scaleX: 1.4, scaleY: 1.4, alpha: 0,
+      scaleX: this.baseScale * 1.4, scaleY: this.baseScale * 1.4, alpha: 0,
       duration: 350, ease: 'Cubic.easeIn',
       onComplete: () => this.destroy(),
     });
