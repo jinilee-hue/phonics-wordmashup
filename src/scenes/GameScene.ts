@@ -302,60 +302,68 @@ export class GameScene extends Phaser.Scene {
     const HUD_K = 1.2;                                  // 상단 HUD 확대 배율
     const sz = (f: number)  => Math.round(f  * s * HUD_K); // uniform size (HUD 확대)
 
-    // ── Back button  (Figma: left:14, top:13, size:62) ───────────
-    const bSz = sz(62);
-    const backImg = this.add.image(p(14) + bSz / 2, q(13) + bSz / 2, 'btn_back_main').setDisplaySize(bSz, bSz).setDepth(51);
+    // ── 공통 드롭섀도(모든 상단 요소 동일) — 버튼 baked shadow(dy3/blur1.5/black30%) 톤에 맞춤 ──
+    const topY = q(13);              // 모든 상단 요소 top (Figma: 13)
+    const H = sz(62);               // 모든 상단 요소 height (Figma: 62)
+    const midY = topY + sz(31);     // 세로 중심
+    const drawTopShadow = (x: number, w: number, r: number) => {
+      const g = this.add.graphics().setDepth(49);
+      g.fillStyle(0x000000, 0.10);
+      g.fillRoundedRect(x - sz(1), topY + sz(2), w + sz(2), H + sz(2), r + sz(1));
+      g.fillStyle(0x000000, 0.16);
+      g.fillRoundedRect(x, topY + sz(3), w, H, r);
+    };
 
-    // Pill left edge: 뒤로가기 버튼과의 간격을 우측 버튼 간격(sz(12))과 동일하게
-    const pillX = p(14) + bSz + sz(12);
-
-    // Book icon on pill left (pillCY = q(13)+sz(27))
-    this.add.image(pillX + sz(33), q(13) + sz(27), 'icon_book').setDisplaySize(sz(40), sz(44)).setDepth(53);
+    // ── Back button (Figma: left:14, top:13, size:62) — baked shadow ──
+    const bSz = H;
+    const backImg = this.add.image(p(14) + bSz / 2, topY + bSz / 2, 'btn_back_main').setDisplaySize(bSz, bSz).setDepth(51);
 
     // Back button hit zone (invisible)
     const hitG = this.add.graphics().setDepth(55).setAlpha(0.001);
-    hitG.fillRect(p(14), q(13), bSz, bSz);
-    hitG.setInteractive(new Phaser.Geom.Rectangle(p(14), q(13), bSz, bSz), Phaser.Geom.Rectangle.Contains);
+    hitG.fillRect(p(14), topY, bSz, bSz);
+    hitG.setInteractive(new Phaser.Geom.Rectangle(p(14), topY, bSz, bSz), Phaser.Geom.Rectangle.Contains);
     hitG.on('pointerdown', () => {
       this.tweens.add({ targets: backImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.cameras.main.fadeOut(280, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => this.scene.restart());
     });
 
-    // ── Progress bar pill — height=sz(53) matches btn_back_main visual area; width=sz(241) for uniform scaling ─
-    const pillW = sz(241), pillH = sz(53);
-    const pillTop = q(13), pillCY = pillTop + sz(27);
-    // (pillX declared above, next to the back button)
+    // ── Compound Book pill (Figma: x88 top13 w241 h62) — 높이 62, 버튼과 동일 ──
+    const pillW = sz(241), pillH = H;
+    const pillTop = topY, pillCY = midY;
+    const pillX = p(14) + bSz + sz(12);   // 뒤로가기 버튼과 간격 sz(12)
 
-    // 그림자 없음(요청) — 알약 배경만 렌더
+    drawTopShadow(pillX, pillW, sz(16));
     this.add.image(pillX + pillW / 2, pillCY, 'hud_bar_pill').setDisplaySize(pillW, pillH).setDepth(51);
 
-    // Track inner — lower portion of pill
-    const tX = pillX + sz(63), tY = pillTop + sz(25), tW = sz(160), tH = sz(22);
-    const trackG = this.add.graphics().setDepth(52);
-    trackG.fillStyle(0x382a65, 1);
-    trackG.fillRoundedRect(tX, tY, tW, tH, sz(11));
+    // Book icon on pill (Figma: offset x10, h56) — 세로 중앙
+    this.add.image(pillX + sz(33), pillCY, 'icon_book').setDisplaySize(sz(42), sz(50)).setDepth(53);
 
-    this.hudTrackX = pillX + sz(65); this.hudTrackY = pillTop + sz(27);
-    this.hudTrackW = sz(156); this.hudTrackH = sz(18);
-    this.progressFill = this.add.graphics().setDepth(53);
-
-    // "Compound Book" label — upper portion of pill
-    this.add.text(pillX + sz(76), pillTop + sz(5), 'Compound Book', {
+    // "Compound Book" label — 상단
+    this.add.text(pillX + sz(76), pillTop + sz(9), 'Compound Book', {
       fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(15)}px`,
       color: '#FFFFFF', fontStyle: 'bold',
     }).setDepth(52);
+
+    // Track inner — 하단
+    const tX = pillX + sz(63), tY = pillTop + sz(35), tW = sz(160), tH = sz(19);
+    const trackG = this.add.graphics().setDepth(52);
+    trackG.fillStyle(0x382a65, 1);
+    trackG.fillRoundedRect(tX, tY, tW, tH, sz(10));
+
+    this.hudTrackX = pillX + sz(65); this.hudTrackY = tY + sz(2);
+    this.hudTrackW = sz(156); this.hudTrackH = sz(15);
+    this.progressFill = this.add.graphics().setDepth(53);
 
     // Round progress text (centered on track)
     this.roundText = this.add.text(tX + tW / 2, tY + tH / 2, `1 / ${ROUNDS}`, {
       fontFamily: 'Baloo 2', fontSize: `${sz(10)}px`, color: 'rgba(255,255,255,0.7)',
     }).setOrigin(0.5).setDepth(54);
 
-    // ── 오른쪽 그룹: 배지 3 + 설정. 오른쪽 끝 기준 정렬(오른쪽 여백 = 왼쪽 back 여백), 간격 균일 ──
-    const sSz = sz(62);
-    const bW = sz(152), bH = sz(53);
-    const ibH = sz(37);
-    const gap = sz(12);                          // 배지/설정 균일 간격
+    // ── 오른쪽 그룹: 배지 3 + 설정. 오른쪽 끝 기준(오른쪽 여백 = 왼쪽 back), 간격 sz(12) ──
+    const sSz = H;
+    const bW = sz(152), bH = H;
+    const gap = sz(12);
     const margin = Math.round(14 * sx);          // 좌측 back 버튼 여백과 대칭
     const sLeft = GW - margin - sSz;             // 설정 버튼 좌측
     const b3L = sLeft - gap - bW;
@@ -363,11 +371,11 @@ export class GameScene extends Phaser.Scene {
     const b1L = b2L - gap - bW;
     const badgeX = [b1L, b2L, b3L];
 
-    // 설정 버튼
-    const settingImg = this.add.image(sLeft + sSz / 2, q(13) + sSz / 2, 'btn_setting').setDisplaySize(sSz, sSz).setDepth(51);
+    // 설정 버튼 (baked shadow)
+    const settingImg = this.add.image(sLeft + sSz / 2, topY + sSz / 2, 'btn_setting').setDisplaySize(sSz, sSz).setDepth(51);
     const settingHit = this.add.graphics().setDepth(55).setAlpha(0.001);
-    settingHit.fillRect(sLeft, q(13), sSz, sSz);
-    settingHit.setInteractive(new Phaser.Geom.Rectangle(sLeft, q(13), sSz, sSz), Phaser.Geom.Rectangle.Contains);
+    settingHit.fillRect(sLeft, topY, sSz, sSz);
+    settingHit.setInteractive(new Phaser.Geom.Rectangle(sLeft, topY, sSz, sSz), Phaser.Geom.Rectangle.Contains);
     settingHit.on('pointerdown', () => {
       this.tweens.add({ targets: settingImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.showSettings();
@@ -379,29 +387,35 @@ export class GameScene extends Phaser.Scene {
       { bgKey: 'badge_coin_main', iconKey: 'icon_money', kind: 'coin'  },
       { bgKey: 'badge_coin_main', iconKey: 'icon_gem',   kind: 'gem'   },
     ];
-    const bTop = q(13), bCY = bTop + sz(27);
 
     badges.forEach((cfg, i) => {
       const bx = badgeX[i];
 
-      // 그림자 없음(요청) — 배지 배경만 렌더
-      this.add.image(bx + bW / 2, bCY, cfg.bgKey).setDisplaySize(bW, bH).setDepth(51);
-      // Dark bar spans from under icon to just before the + button
-      const ibL = bx + sz(27), ibT = bTop + sz(8), ibW = bW - sz(35);
+      // 공통 그림자 → 배경
+      drawTopShadow(bx, bW, sz(16));
+      this.add.image(bx + bW / 2, midY, cfg.bgKey).setDisplaySize(bW, bH).setDepth(51);
+
+      // 숫자용 어두운 인셋 바 (세로 중앙)
+      const ibH = sz(40);
+      const ibL = bx + sz(30), ibT = midY - ibH / 2, ibW = bW - sz(43);
       const ibG = this.add.graphics().setDepth(52);
       ibG.fillStyle(0x426295, 1);
-      ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(10));
-      const iconSz = sz(36);
-      this.add.image(bx + sz(10) + iconSz / 2, bCY, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53);
-      const numTxt = this.add.text(bx + sz(107), bTop + sz(15), '0', {
+      ibG.fillRoundedRect(ibL, ibT, ibW, ibH, sz(11));
+
+      // 아이콘 (세로 중앙, 왼쪽으로 살짝 튀어나오게)
+      const iconSz = sz(46);
+      this.add.image(bx + sz(8) + iconSz / 2, midY, cfg.iconKey).setDisplaySize(iconSz, iconSz).setDepth(53);
+
+      const numTxt = this.add.text(bx + sz(107), midY, '0', {
         fontFamily: '"Inter", "Baloo 2"', fontSize: `${sz(22)}px`,
         color: '#FFFFFF', fontStyle: 'bold',
-      }).setOrigin(1, 0).setDepth(53);
+      }).setOrigin(1, 0.5).setDepth(53);
       if (cfg.kind === 'score') this.scoreText = numTxt;
       if (cfg.kind === 'coin')  this.coinText  = numTxt;
       if (cfg.kind === 'gem')   this.gemText   = numTxt;
-      // + button: right edge = badge right edge (center at bW - half button width + 3px nudge)
-      this.add.image(bx + bW - sz(13), bCY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
+
+      // + 버튼 (세로 중앙, 우측 끝)
+      this.add.image(bx + bW - sz(13), midY, 'btn_plus').setDisplaySize(sz(32), sz(32)).setDepth(53);
     });
   }
 
