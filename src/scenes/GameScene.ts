@@ -86,12 +86,12 @@ export class GameScene extends Phaser.Scene {
 
     // Figma SVG assets — scale:2 rasterizes at 2× viewBox size for crisp display at any screen size
     this.load.svg('btn_back_shadow', './images/btn_back_shadow.svg', { scale: 2 });
-    this.load.svg('btn_back_main',   './images/btn_back_main.svg',   { scale: 2 });
+    this.load.image('btn_back_main', './images/btn_back_main.png');   // 고해상도 PNG(래스터 아티팩트/캐시 방지)
     this.load.svg('badge_shadow',    './images/badge_shadow.svg',    { scale: 2 });
     this.load.svg('badge_star_main', './images/badge_star_main.svg', { scale: 2 });
     this.load.svg('badge_coin_main', './images/badge_coin_main.svg', { scale: 2 });
     this.load.svg('btn_plus',        './images/btn_plus.svg',        { scale: 2 });
-    this.load.svg('btn_setting',     './images/btn_setting.svg',     { scale: 2 });
+    this.load.image('btn_setting',   './images/btn_setting.png');
     this.load.image('btn_next_play', './images/btn_next_play.png');
     this.load.svg('nav_blue_shadow', './images/nav_blue_shadow.svg', { scale: 2 });
     this.load.svg('nav_blue_main',   './images/nav_blue_main.svg',   { scale: 2 });
@@ -105,10 +105,10 @@ export class GameScene extends Phaser.Scene {
     this.load.svg('nav_hint_shadow', './images/nav_hint_shadow.svg', { scale: 2 });
     this.load.svg('nav_hint_main',   './images/nav_hint_main.svg',   { scale: 2 });
     this.load.svg('nav_hint_top',    './images/nav_hint_top.svg',    { scale: 2 });
-    this.load.svg('icon_replay',     './images/icon_replay.svg',     { scale: 4 });
-    this.load.svg('icon_mic',        './images/icon_mic.svg',        { scale: 4 });
-    this.load.svg('icon_hint',       './images/icon_hint.svg',       { scale: 4 });
-    this.load.svg('icon_home',       './images/icon_home.svg',       { scale: 4 });
+    this.load.image('icon_replay',   './images/icon_replay.png');   // 고해상도 PNG
+    this.load.image('icon_mic',      './images/icon_mic.png');
+    this.load.image('icon_hint',     './images/icon_hint.png');
+    this.load.image('icon_home',     './images/icon_home.png');
   }
 
   create() {
