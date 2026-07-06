@@ -1780,7 +1780,7 @@ export class GameScene extends Phaser.Scene {
   // ── 모은 단어 도감 (책 아이콘 클릭 시 언제든 열림) ─────────────────
   // 아이콘에 자연스러운 드롭섀도(preFX) 적용
   private iconShadow<T extends Phaser.GameObjects.Image>(img: T): T {
-    img.preFX?.addShadow(0, -4, 0.1, 1, 0x000000, 10, 0.28);
+    img.preFX?.addShadow(0, -4, 0.1, 1, 0x000000, 10, 0.18);
     return img;
   }
 
