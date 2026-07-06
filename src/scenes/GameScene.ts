@@ -2035,12 +2035,13 @@ export class GameScene extends Phaser.Scene {
       const highlight = row.kind === kind;
       const rad = Math.round(rowH * 0.16);
       const rg = this.add.graphics();
-      rg.fillStyle(0xFFFFFF, 1);                       // 깔끔한 흰색 배경
-      rg.fillRoundedRect(rowX, top, rowW, rowH, rad);
-      // 선택 행은 컬러 라인만, 나머지는 옅은 회보라 라인
-      if (highlight) rg.lineStyle(Math.max(2, Math.round(s * 3)), row.color, 1);
-      else           rg.lineStyle(Math.max(1, Math.round(s * 1.5)), 0xE3DAF2, 1);
-      rg.strokeRoundedRect(rowX, top, rowW, rowH, rad);
+      // 선택된 행만 흰색 배경 + 컬러 라인, 나머지는 투명
+      if (highlight) {
+        rg.fillStyle(0xFFFFFF, 1);
+        rg.fillRoundedRect(rowX, top, rowW, rowH, rad);
+        rg.lineStyle(Math.max(2, Math.round(s * 3)), row.color, 1);
+        rg.strokeRoundedRect(rowX, top, rowW, rowH, rad);
+      }
       panel.add(rg);
 
       const icx = rowX + Math.round(rowH * 0.5);
