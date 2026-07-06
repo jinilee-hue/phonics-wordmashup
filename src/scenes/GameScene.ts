@@ -701,7 +701,8 @@ export class GameScene extends Phaser.Scene {
   private drawSpinRing() {
     const { zoneR: ZONE_R } = this;
     const g = this.zoneSpinGfx;
-    const PINK = 0xFF2DA0;
+    // 눈금·점의 핑크를 원 링이 시안 글로우와 겹쳐 보이는 자홍빛에 맞춤(민트/시안은 유지)
+    const PINK = 0xFF5BFD;
     const CYAN = 0x00E0FF;
     g.clear();
 
