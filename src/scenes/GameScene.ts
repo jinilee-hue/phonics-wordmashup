@@ -338,7 +338,7 @@ export class GameScene extends Phaser.Scene {
     // Back button hit zone (invisible)
     const hitG = this.add.graphics().setDepth(55).setAlpha(0.001);
     hitG.fillRect(p(14), topY, bSz, bodyH);
-    hitG.setInteractive(new Phaser.Geom.Rectangle(p(14), topY, bSz, bodyH), Phaser.Geom.Rectangle.Contains);
+    hitG.setInteractive({ hitArea: new Phaser.Geom.Rectangle(p(14), topY, bSz, bodyH), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
     hitG.on('pointerdown', () => {
       this.tweens.add({ targets: backImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.cameras.main.fadeOut(280, 0, 0, 0);
@@ -379,10 +379,14 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Baloo 2', fontSize: `${sz(10)}px`, color: 'rgba(255,255,255,0.7)',
     }).setOrigin(0.5).setDepth(54);
 
-    // 알약(Compound Book) 클릭 → 모은 단어 도감 팝업
+    // 알약(Compound Book) 전체 클릭 → 도감 팝업. hover 시 손가락 커서.
     const bookHit = this.add.graphics().setDepth(54).setAlpha(0.001);
     bookHit.fillRect(pillX, topY, pillW, bodyH);
-    bookHit.setInteractive(new Phaser.Geom.Rectangle(pillX, topY, pillW, bodyH), Phaser.Geom.Rectangle.Contains);
+    bookHit.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(pillX, topY, pillW, bodyH),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true,
+    });
     bookHit.on('pointerdown', () => this.showCollection());
 
     // ── 오른쪽 그룹: 배지 3 + 설정. 오른쪽 끝 기준(오른쪽 여백 = 왼쪽 back), 간격 sz(12) ──
@@ -400,7 +404,7 @@ export class GameScene extends Phaser.Scene {
     const settingImg = this.add.image(sLeft + bSz / 2, midY + btnCyOff, 'btn_setting').setDisplaySize(btnDisp, btnDisp).setDepth(51);
     const settingHit = this.add.graphics().setDepth(55).setAlpha(0.001);
     settingHit.fillRect(sLeft, topY, bSz, bodyH);
-    settingHit.setInteractive(new Phaser.Geom.Rectangle(sLeft, topY, bSz, bodyH), Phaser.Geom.Rectangle.Contains);
+    settingHit.setInteractive({ hitArea: new Phaser.Geom.Rectangle(sLeft, topY, bSz, bodyH), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
     settingHit.on('pointerdown', () => {
       this.tweens.add({ targets: settingImg, scaleX: 0.88, scaleY: 0.88, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.showSettings();
@@ -552,7 +556,7 @@ export class GameScene extends Phaser.Scene {
 
       const hit = this.add.graphics().setAlpha(0.001);
       hit.fillRect(tX - tW / 2, tY - tH / 2, tW, tH);
-      hit.setInteractive(new Phaser.Geom.Rectangle(tX - tW / 2, tY - tH / 2, tW, tH), Phaser.Geom.Rectangle.Contains);
+      hit.setInteractive({ hitArea: new Phaser.Geom.Rectangle(tX - tW / 2, tY - tH / 2, tW, tH), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
       hit.on('pointerdown', () => { toggle(); refresh(); });
 
       container.add([label, trackBg, knobGfx, hit]);
@@ -571,7 +575,7 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5);
     const closeHit = this.add.graphics().setAlpha(0.001);
     closeHit.fillRect(-sz(72), closeBtnY - sz(22), sz(144), sz(44));
-    closeHit.setInteractive(new Phaser.Geom.Rectangle(-sz(72), closeBtnY - sz(22), sz(144), sz(44)), Phaser.Geom.Rectangle.Contains);
+    closeHit.setInteractive({ hitArea: new Phaser.Geom.Rectangle(-sz(72), closeBtnY - sz(22), sz(144), sz(44)), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
     closeHit.on('pointerdown', () => container.setVisible(false));
     closeHit.on('pointerover', () => { closeBg.clear(); closeBg.fillStyle(0x7b63b7, 1); closeBg.fillRoundedRect(-sz(72), closeBtnY - sz(22), sz(144), sz(44), sz(12)); });
     closeHit.on('pointerout',  () => { closeBg.clear(); closeBg.fillStyle(0x5a3fbf, 1); closeBg.fillRoundedRect(-sz(72), closeBtnY - sz(22), sz(144), sz(44), sz(12)); });
@@ -849,7 +853,7 @@ export class GameScene extends Phaser.Scene {
       const x = p(figX), w = p(figW);
       const h = this.add.graphics().setDepth(45).setAlpha(0.001);
       h.fillRect(x, navY, w, navH);
-      h.setInteractive(new Phaser.Geom.Rectangle(x, navY, w, navH), Phaser.Geom.Rectangle.Contains);
+      h.setInteractive({ hitArea: new Phaser.Geom.Rectangle(x, navY, w, navH), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
       h.on('pointerdown', cb);
     };
 
@@ -1794,6 +1798,14 @@ export class GameScene extends Phaser.Scene {
     const pageW = bookW - inset * 2, pageH = bookH - inset * 2;
     g.fillStyle(0xF4EEFF, 1);
     g.fillRoundedRect(pageX, pageY, pageW, pageH, Math.round(r * 0.5));
+    // 가운데 접힘선(두 페이지 스프레드) — 종료 화면 도감과 동일한 틀
+    for (let k = 5; k >= 0; k--) {
+      const fw = Math.round(bookW * 0.012) * (k + 1);
+      g.fillStyle(0x3A2168, 0.045 * (1 - k / 6));
+      g.fillRect(-fw, pageY, fw * 2, pageH);
+    }
+    g.fillStyle(0x3A2168, 0.14); g.fillRect(-1, pageY, 2, pageH);
+    g.fillStyle(0xFFFFFF, 0.5);  g.fillRect(1, pageY, 1, pageH);
     book.add(g);
     // 책 내부 클릭 흡수(바깥 클릭만 닫힘) — topOnly 입력이라 위 버튼이 우선
     const swallow = this.add.zone(0, 0, bookW, bookH).setInteractive();
@@ -1834,9 +1846,11 @@ export class GameScene extends Phaser.Scene {
     const navH = Math.round(bookH * 0.1);
     const contentBottom = pageY + pageH - pad - navH;
     const COLS = 4, ROWS = 3, PER = COLS * ROWS;
-    const cellW = (pageW - pad * 2) / COLS, cellH = (contentBottom - contentTop) / ROWS;
-    const cardH = Math.min(cellH * 0.9, cellW * 0.82 * 1.21), cardW = cardH / 1.21;
-    const gridL = pageX + pad;
+    const centerGap = Math.round(bookW * 0.03);   // 가운데 접힘선 여백
+    const leftL = pageX + pad, rightR = pageX + pageW - pad;
+    const halfCellW = ((rightR - leftL) - centerGap) / COLS;   // 좌2 + 우2, 동일 셀폭
+    const cellH = (contentBottom - contentTop) / ROWS;
+    const cardH = Math.min(cellH * 0.9, halfCellW * 0.82 * 1.21), cardW = cardH / 1.21;
     const totalPages = Math.ceil(COMPOUND_PAIRS.length / PER);
 
     const pages: Phaser.GameObjects.Container[] = [];
@@ -1846,7 +1860,11 @@ export class GameScene extends Phaser.Scene {
       book.add(pc);
       COMPOUND_PAIRS.slice(pg * PER, (pg + 1) * PER).forEach((p, idx) => {
         const col = idx % COLS, row = Math.floor(idx / COLS);
-        const tx = gridL + cellW * (col + 0.5), ty = contentTop + cellH * (row + 0.5);
+        // 좌측 페이지(col 0,1) / 우측 페이지(col 2,3) — 가운데 접힘선 기준 분리
+        const tx = col < 2
+          ? leftL + halfCellW * (col + 0.5)
+          : (centerGap / 2) + halfCellW * (col - 2 + 0.5);
+        const ty = contentTop + cellH * (row + 0.5);
         const slot = this.add.graphics();
         slot.fillStyle(0x6B49A8, 0.08);
         slot.fillRoundedRect(tx - cardW / 2 - 3, ty - cardH / 2 - 3, cardW + 6, cardH + 6, 8);
@@ -1886,10 +1904,10 @@ export class GameScene extends Phaser.Scene {
     drawDots();
     const prevBtn = this.add.text(pageX + pad + navFont * 0.5, navCY, '‹', {
       fontFamily: '"Baloo 2"', fontSize: `${navFont}px`, color: '#6B49A8', fontStyle: 'bold',
-    }).setOrigin(0.5).setVisible(false).setInteractive();
+    }).setOrigin(0.5).setVisible(false).setInteractive({ useHandCursor: true });
     const nextBtn = this.add.text(pageX + pageW - pad - navFont * 0.5, navCY, '›', {
       fontFamily: '"Baloo 2"', fontSize: `${navFont}px`, color: '#6B49A8', fontStyle: 'bold',
-    }).setOrigin(0.5).setVisible(totalPages > 1).setInteractive();
+    }).setOrigin(0.5).setVisible(totalPages > 1).setInteractive({ useHandCursor: true });
     book.add([prevBtn, nextBtn]);
     const nav = (dir: number) => {
       const np = page + dir;
@@ -1905,7 +1923,11 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: layer, alpha: 0, duration: 200, onComplete: () => { layer.destroy(); this.collectionOpen = false; } });
     };
     dim.on('pointerdown', close);
-    closeG.setInteractive(new Phaser.Geom.Circle(closeX, closeY, closeR * 1.4), Phaser.Geom.Circle.Contains);
+    closeG.setInteractive({
+      hitArea: new Phaser.Geom.Circle(closeX, closeY, closeR * 1.4),
+      hitAreaCallback: Phaser.Geom.Circle.Contains,
+      useHandCursor: true,
+    });
     closeG.on('pointerdown', close);
 
     book.setScale(0.85);
@@ -2139,8 +2161,8 @@ export class GameScene extends Phaser.Scene {
         nextBtn.setVisible(collPage < totalPages - 1);
       };
 
-      prevBtn.setInteractive().on('pointerdown', () => navigate(-1));
-      nextBtn.setInteractive().on('pointerdown', () => navigate(1));
+      prevBtn.setInteractive({ useHandCursor: true }).on('pointerdown', () => navigate(-1));
+      nextBtn.setInteractive({ useHandCursor: true }).on('pointerdown', () => navigate(1));
     }
 
     // Book entrance
@@ -2183,7 +2205,7 @@ export class GameScene extends Phaser.Scene {
 
     const hit = this.add.graphics().setDepth(76).setAlpha(0.001);
     hit.fillRect(CX - bW / 2, bCY - bH / 2, bW, bH);
-    hit.setInteractive(new Phaser.Geom.Rectangle(CX - bW / 2, bCY - bH / 2, bW, bH), Phaser.Geom.Rectangle.Contains);
+    hit.setInteractive({ hitArea: new Phaser.Geom.Rectangle(CX - bW / 2, bCY - bH / 2, bW, bH), hitAreaCallback: Phaser.Geom.Rectangle.Contains, useHandCursor: true });
     hit.on('pointerdown', () => {
       this.tweens.add({ targets: btnCont, scaleX: 0.92, scaleY: 0.92, duration: 80, yoyo: true, ease: 'Back.easeIn' });
       this.time.delayedCall(100, () => {
