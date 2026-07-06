@@ -317,15 +317,14 @@ export class GameScene extends Phaser.Scene {
     const btnCyOff = Math.round(btnDisp * (0.5 - 29 / 68));
     // 공통 드롭섀도 — 버튼 baked shadow(dy3/blur1.5/black30%) 톤에 맞춤
     const drawTopShadow = (x: number, w: number, r: number) => {
-      // 버튼(back/setting)의 baked 드롭섀도처럼 박스 밖으로 번지는 검은 반투명 소프트 그림자
-      // (컬러 밑단 뒤에 가리지 않도록 박스보다 크게 그리고 아래로 오프셋)
+      // 뒤로가기/설정 버튼의 baked 드롭섀도(dy3 / blur1.5 / black0.3)와 동일하게 통일.
+      // 밑단(+sz4) 실루엣을 dy3 만큼 내려 타이트하게(밑단 아래로 sz3만 노출).
       const g = this.add.graphics().setDepth(48);
-      g.fillStyle(0x000000, 0.06);
-      g.fillRoundedRect(x - sz(3), topY + sz(5), w + sz(6), bodyH + sz(6), r + sz(3));
-      g.fillStyle(0x000000, 0.10);
-      g.fillRoundedRect(x - sz(1.5), topY + sz(5), w + sz(3), bodyH + sz(5), r + sz(1.5));
-      g.fillStyle(0x000000, 0.16);
-      g.fillRoundedRect(x, topY + sz(5), w, bodyH + sz(4), r);
+      const top = topY + sz(4) + sz(3);
+      g.fillStyle(0x000000, 0.12);   // 블러 헤일로
+      g.fillRoundedRect(x - sz(1.5), top - sz(1), w + sz(3), bodyH + sz(2), r + sz(1.5));
+      g.fillStyle(0x000000, 0.30);   // 메인 그림자
+      g.fillRoundedRect(x, top, w, bodyH, r);
     };
 
     // ── Back button (Figma: left:14, top:13, size:62) — baked shadow ──
