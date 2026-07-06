@@ -70,10 +70,10 @@ export class GameScene extends Phaser.Scene {
   preload() {
     // Actual PNG files
     this.load.image('game_bg',    './images/game_bg.png');
-    this.load.image('icon_book',  './images/icon_book.png');
-    this.load.image('icon_star',  './images/icon_star.png');
-    this.load.image('icon_money', './images/icon_money.png');
-    this.load.image('icon_gem',   './images/icon_gemstone.png');
+    this.load.image('icon_book',  './images/icon_book_v2.png');    // _v2: 고해상도 + 캐시 무력화(파일명 변경)
+    this.load.image('icon_star',  './images/icon_star_v2.png');
+    this.load.image('icon_money', './images/icon_money_v2.png');
+    this.load.image('icon_gem',   './images/icon_gemstone_v2.png');
     // Word-specific card images (left)
     ['base','birth','book','butter','cake','cup','door','eye','fire','foot','hand','key','light','moon','news','note','pan','play','rain','sea','snow','star','sun','tea','tooth','water','week']
       .forEach(w => this.load.image(`card_left_${w}`, `./images/card_left_${w}.png`));
@@ -1780,7 +1780,7 @@ export class GameScene extends Phaser.Scene {
   // ── 모은 단어 도감 (책 아이콘 클릭 시 언제든 열림) ─────────────────
   // 아이콘에 자연스러운 드롭섀도(preFX) 적용
   private iconShadow<T extends Phaser.GameObjects.Image>(img: T): T {
-    img.preFX?.addShadow(0, -4, 0.1, 1, 0x000000, 10, 0.18);
+    img.preFX?.addShadow(0, -4, 0.1, 1, 0x000000, 10, 0.09);
     return img;
   }
 
