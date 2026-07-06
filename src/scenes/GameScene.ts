@@ -12,6 +12,7 @@ export class GameScene extends Phaser.Scene {
   private cx = 0;
   private cy = 0;
   private collectionOpen = false;   // 도감 팝업 열림 가드
+  private overButton = false;       // 인터랙티브 버튼 위 hover 여부(커서 유지용)
   private zoneR = 0;
   private snapOff = 0;
 
@@ -135,9 +136,10 @@ export class GameScene extends Phaser.Scene {
     this.sfxOn = gameAudio.sfxOn;
     this.input.once('pointerdown', () => { gameAudio.unlock(); gameAudio.startBgm(); });
 
-    // Pointer cursor on hover for all interactive objects
-    this.input.on('gameobjectover', () => { this.game.canvas.style.cursor = 'pointer'; });
-    this.input.on('gameobjectout',  () => { this.game.canvas.style.cursor = 'default'; });
+    // Pointer cursor on hover for all interactive objects.
+    // overButton 플래그로 카드 근접 pointermove 핸들러가 버튼 커서를 덮어쓰지 않게 함.
+    this.input.on('gameobjectover', () => { this.overButton = true;  this.game.canvas.style.cursor = 'pointer'; });
+    this.input.on('gameobjectout',  () => { this.overButton = false; this.game.canvas.style.cursor = 'default'; });
 
     this.buildStageBackground();
     this.buildParticleBurst();
@@ -1235,7 +1237,8 @@ export class GameScene extends Phaser.Scene {
       const nearCard = cards.some(
         c => Phaser.Math.Distance.Between(ptr.worldX, ptr.worldY, c.x, c.y) < GRAB_R,
       );
-      this.game.canvas.style.cursor = nearCard ? 'pointer' : 'default';
+      // 버튼 위(overButton)면 버튼 hover 커서 유지, 아니면 카드 근접 여부로 결정
+      this.game.canvas.style.cursor = (nearCard || this.overButton) ? 'pointer' : 'default';
     });
 
     this.input.on('pointerup', () => {
