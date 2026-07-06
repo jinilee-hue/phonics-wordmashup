@@ -2021,42 +2021,82 @@ export class GameScene extends Phaser.Scene {
       fontFamily: '"Baloo 2"', fontSize: `${Math.round(closeR * 1.1)}px`, color: '#FFFFFF', fontStyle: 'bold',
     }).setOrigin(0.5));
 
-    // 3개 재화 행 — 행 간 간격 + 각 행 내부 상단 여백
-    const rowTop = pageY + titleH + Math.round(panelH * 0.06);
-    const rowGap = Math.round(panelH * 0.035);
-    const areaH = (pageY + pageH - pad) - rowTop;
-    const rowH = (areaH - rowGap * (rows.length - 1)) / rows.length;
-    const iconSz = Math.round(rowH * 0.4);
-    const rowX = pageX + pad;
-    const rowW = pageW - pad * 2;
-    rows.forEach((row, i) => {
-      const top = rowTop + i * (rowH + rowGap);
-      const cy = top + rowH / 2;
-      const highlight = row.kind === kind;
-      const rad = Math.round(rowH * 0.16);
-      const rg = this.add.graphics();
-      // 모든 행 배경 투명. 선택된 행만 컬러 라인(테두리)으로 표시.
-      if (highlight) {
-        rg.lineStyle(Math.max(2, Math.round(s * 3)), row.color, 1);
-        rg.strokeRoundedRect(rowX, top, rowW, rowH, rad);
-      }
-      panel.add(rg);
+    // ── 좌: 선택된 재화 크게 / 우: 목록(탭하여 전환) ─────────────────
+    const contentTop = pageY + titleH + Math.round(panelH * 0.04);
+    const contentBottom = pageY + pageH - pad;
+    const gapC = Math.round(panelW * 0.025);
+    const leftL = pageX + pad, leftR = -gapC;
+    const rightL = gapC, rightR = pageX + pageW - pad;
+    const leftW = leftR - leftL, rightW = rightR - rightL;
+    const rgba = (c: number) => Phaser.Display.Color.IntegerToColor(c).rgba;
+    const row = (k: string) => rows.find(r => r.kind === k) ?? rows[0];
+    let sel = kind as string;
 
-      const icx = rowX + Math.round(rowH * 0.5);
-      panel.add(this.add.image(icx, cy, row.icon).setDisplaySize(iconSz, iconSz));
-      const textL = icx + Math.round(rowH * 0.5);
-      // 타이틀은 행 상단에서 여백을 두고 배치
-      panel.add(this.add.text(textL, top + rowH * 0.26, row.name, {
-        fontFamily: '"Baloo 2"', fontSize: `${Math.round(rowH * 0.2)}px`,
-        color: Phaser.Display.Color.IntegerToColor(row.color).rgba, fontStyle: 'bold',
+    // 좌측 상세 (재선택 시 다시 그림)
+    const leftCont = this.add.container(0, 0);
+    panel.add(leftCont);
+    const drawLeft = () => {
+      leftCont.removeAll(true);
+      const rr = row(sel);
+      const lcx = (leftL + leftR) / 2;
+      const bigIcon = Math.round(Math.min(leftW * 0.4, (contentBottom - contentTop) * 0.32));
+      let y = contentTop + Math.round(bigIcon * 0.6);
+      leftCont.add(this.add.image(lcx, y, rr.icon).setDisplaySize(bigIcon, bigIcon));
+      y += Math.round(bigIcon * 0.72);
+      leftCont.add(this.add.text(lcx, y, rr.name, {
+        fontFamily: '"Baloo 2"', fontSize: `${Math.round(leftW * 0.11)}px`, color: rgba(rr.color), fontStyle: 'bold',
+      }).setOrigin(0.5));
+      y += Math.round(leftW * 0.11);
+      const tx = leftL + Math.round(leftW * 0.07);
+      const wrapW = leftW * 0.86;
+      const fs = Math.round(leftW * 0.05);
+      const addBlock = (label: string, text: string) => {
+        leftCont.add(this.add.text(tx, y, label, {
+          fontFamily: '"Baloo 2"', fontSize: `${Math.round(fs * 1.05)}px`, color: '#8A43D6', fontStyle: 'bold',
+        }).setOrigin(0, 0));
+        const t = this.add.text(tx, y + Math.round(fs * 1.5), text, {
+          fontFamily: '"Inter","Baloo 2"', fontSize: `${fs}px`, color: '#5A4A7A',
+          wordWrap: { width: wrapW }, lineSpacing: 5,
+        }).setOrigin(0, 0);
+        leftCont.add(t);
+        y += Math.round(fs * 1.5) + t.height + Math.round(fs * 1.0);
+      };
+      addBlock('모으기', rr.earn);
+      addBlock('쓰기', rr.spend);
+    };
+
+    // 우측 목록 (탭하여 선택 전환)
+    const rItemGap = Math.round(panelH * 0.03);
+    const rItemH = (contentBottom - contentTop - rItemGap * (rows.length - 1)) / rows.length;
+    const rIconSz = Math.round(rItemH * 0.5);
+    const itemGfx: { k: string; g: Phaser.GameObjects.Graphics; top: number }[] = [];
+    const redrawItems = () => {
+      itemGfx.forEach(it => {
+        it.g.clear();
+        if (it.k === sel) {
+          it.g.lineStyle(Math.max(2, Math.round(s * 3)), row(it.k).color, 1);
+          it.g.strokeRoundedRect(rightL, it.top, rightW, rItemH, Math.round(rItemH * 0.22));
+        }
+      });
+    };
+    rows.forEach((rr, i) => {
+      const top = contentTop + i * (rItemH + rItemGap);
+      const cy = top + rItemH / 2;
+      const ig = this.add.graphics();
+      panel.add(ig);
+      itemGfx.push({ k: rr.kind, g: ig, top });
+      const icx = rightL + Math.round(rItemH * 0.55);
+      panel.add(this.add.image(icx, cy, rr.icon).setDisplaySize(rIconSz, rIconSz));
+      panel.add(this.add.text(icx + Math.round(rItemH * 0.5), cy, rr.name, {
+        fontFamily: '"Baloo 2"', fontSize: `${Math.round(rItemH * 0.3)}px`, color: rgba(rr.color), fontStyle: 'bold',
       }).setOrigin(0, 0.5));
-      panel.add(this.add.text(textL, top + rowH * 0.56, `모으기   ${row.earn}`, {
-        fontFamily: '"Inter","Baloo 2"', fontSize: `${Math.round(rowH * 0.125)}px`, color: '#5A4A7A',
-      }).setOrigin(0, 0.5));
-      panel.add(this.add.text(textL, top + rowH * 0.79, `쓰기       ${row.spend}`, {
-        fontFamily: '"Inter","Baloo 2"', fontSize: `${Math.round(rowH * 0.125)}px`, color: '#8A5AB8',
-      }).setOrigin(0, 0.5));
+      const hit = this.add.zone(rightL + rightW / 2, cy, rightW, rItemH).setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', () => { sel = rr.kind; drawLeft(); redrawItems(); });
+      panel.add(hit);
     });
+
+    drawLeft();
+    redrawItems();
 
     const close = () => {
       this.tweens.add({ targets: layer, alpha: 0, duration: 200, onComplete: () => { layer.destroy(); this.infoOpen = false; } });
