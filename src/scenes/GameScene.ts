@@ -11,6 +11,7 @@ export class GameScene extends Phaser.Scene {
   private gh = 0;
   private cx = 0;
   private cy = 0;
+  private collectionOpen = false;   // 도감 팝업 열림 가드
   private zoneR = 0;
   private snapOff = 0;
 
@@ -377,6 +378,12 @@ export class GameScene extends Phaser.Scene {
     this.roundText = this.add.text(tX + tW / 2, tY + tH / 2, `1 / ${ROUNDS}`, {
       fontFamily: 'Baloo 2', fontSize: `${sz(10)}px`, color: 'rgba(255,255,255,0.7)',
     }).setOrigin(0.5).setDepth(54);
+
+    // 알약(Compound Book) 클릭 → 모은 단어 도감 팝업
+    const bookHit = this.add.graphics().setDepth(54).setAlpha(0.001);
+    bookHit.fillRect(pillX, topY, pillW, bodyH);
+    bookHit.setInteractive(new Phaser.Geom.Rectangle(pillX, topY, pillW, bodyH), Phaser.Geom.Rectangle.Contains);
+    bookHit.on('pointerdown', () => this.showCollection());
 
     // ── 오른쪽 그룹: 배지 3 + 설정. 오른쪽 끝 기준(오른쪽 여백 = 왼쪽 back), 간격 sz(12) ──
     const bW = sz(152), bH = bodyH;
@@ -1751,6 +1758,160 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ── Finale ────────────────────────────────────────────────────────
+
+  // ── 모은 단어 도감 (책 아이콘 클릭 시 언제든 열림) ─────────────────
+  private showCollection() {
+    if (this.collectionOpen) return;
+    this.collectionOpen = true;
+
+    const { gw: GW, gh: GH } = this;
+    const s = Math.min(GW / 1280, GH / 720);
+    const CX = Math.round(GW / 2), CY = Math.round(GH / 2);
+
+    const layer = this.add.container(0, 0).setDepth(80).setAlpha(0);
+
+    const dim = this.add.graphics();
+    dim.fillStyle(0x150B33, 0.82);
+    dim.fillRect(0, 0, GW, GH);
+    dim.setInteractive(new Phaser.Geom.Rectangle(0, 0, GW, GH), Phaser.Geom.Rectangle.Contains);
+    layer.add(dim);
+
+    const bookW = Math.round(Math.min(GW * 0.62, GH * 1.15));
+    const bookH = Math.round(GH * 0.72);
+    const r = Math.round(Math.min(bookW, bookH) * 0.05);
+    const book = this.add.container(CX, CY);
+    layer.add(book);
+
+    const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.4);
+    g.fillRoundedRect(-bookW / 2 + 8, -bookH / 2 + 14, bookW, bookH, r);
+    g.fillStyle(0x6B49A8, 1);
+    g.fillRoundedRect(-bookW / 2, -bookH / 2, bookW, bookH, r);
+    g.lineStyle(Math.max(3, Math.round(bookW * 0.006)), 0x3A2168, 1);
+    g.strokeRoundedRect(-bookW / 2, -bookH / 2, bookW, bookH, r);
+    const inset = Math.round(bookW * 0.035);
+    const pageX = -bookW / 2 + inset, pageY = -bookH / 2 + inset;
+    const pageW = bookW - inset * 2, pageH = bookH - inset * 2;
+    g.fillStyle(0xF4EEFF, 1);
+    g.fillRoundedRect(pageX, pageY, pageW, pageH, Math.round(r * 0.5));
+    book.add(g);
+    // 책 내부 클릭 흡수(바깥 클릭만 닫힘) — topOnly 입력이라 위 버튼이 우선
+    const swallow = this.add.zone(0, 0, bookW, bookH).setInteractive();
+    swallow.on('pointerdown', () => {});
+    book.add(swallow);
+
+    const pad = Math.round(bookW * 0.03);
+    const titleH = Math.round(bookH * 0.11);
+    const titleY = pageY + pad + titleH * 0.4;
+    const ibH = Math.round(titleH * 0.62), ibW = Math.round(ibH * 46 / 56);
+    book.add(this.add.image(pageX + pad + ibW / 2, titleY, 'icon_book').setDisplaySize(ibW, ibH));
+    book.add(this.add.text(pageX + pad + ibW + Math.round(s * 10), titleY, 'Compound Book', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.5)}px`,
+      color: '#5A2E94', fontStyle: 'bold',
+    }).setOrigin(0, 0.5));
+
+    const collected = this.getCollected();
+    const countTxt = this.add.text(pageX + pageW - pad - Math.round(titleH * 0.9), titleY,
+      `${collected.size} / ${COMPOUND_PAIRS.length}`, {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(titleH * 0.42)}px`,
+      color: '#8A43D6', fontStyle: 'bold',
+    }).setOrigin(1, 0.5);
+    book.add(countTxt);
+
+    // ── 닫기 버튼 (우상단 X) ──
+    const closeR = Math.round(titleH * 0.42);
+    const closeX = pageX + pageW - pad - closeR, closeY = titleY;
+    const closeG = this.add.graphics();
+    closeG.fillStyle(0x8A43D6, 1); closeG.fillCircle(closeX, closeY, closeR);
+    const closeTxt = this.add.text(closeX, closeY, '✕', {
+      fontFamily: '"Baloo 2"', fontSize: `${Math.round(closeR * 1.1)}px`, color: '#FFFFFF', fontStyle: 'bold',
+    }).setOrigin(0.5);
+    book.add([closeG, closeTxt]);
+    countTxt.setX(closeX - closeR - Math.round(s * 12));
+
+    // ── 카드 그리드 (전체 페어, 획득=이미지 / 미획득=흐린 ?), 페이지네이션 ──
+    const contentTop = pageY + titleH + Math.round(bookH * 0.05);
+    const navH = Math.round(bookH * 0.1);
+    const contentBottom = pageY + pageH - pad - navH;
+    const COLS = 4, ROWS = 3, PER = COLS * ROWS;
+    const cellW = (pageW - pad * 2) / COLS, cellH = (contentBottom - contentTop) / ROWS;
+    const cardH = Math.min(cellH * 0.9, cellW * 0.82 * 1.21), cardW = cardH / 1.21;
+    const gridL = pageX + pad;
+    const totalPages = Math.ceil(COMPOUND_PAIRS.length / PER);
+
+    const pages: Phaser.GameObjects.Container[] = [];
+    for (let pg = 0; pg < totalPages; pg++) {
+      const pc = this.add.container(0, 0);
+      if (pg !== 0) pc.setVisible(false);
+      book.add(pc);
+      COMPOUND_PAIRS.slice(pg * PER, (pg + 1) * PER).forEach((p, idx) => {
+        const col = idx % COLS, row = Math.floor(idx / COLS);
+        const tx = gridL + cellW * (col + 0.5), ty = contentTop + cellH * (row + 0.5);
+        const slot = this.add.graphics();
+        slot.fillStyle(0x6B49A8, 0.08);
+        slot.fillRoundedRect(tx - cardW / 2 - 3, ty - cardH / 2 - 3, cardW + 6, cardH + 6, 8);
+        pc.add(slot);
+        const has = collected.has(p.result);
+        const key = `card_${p.result}`;
+        if (has && this.textures.exists(key)) {
+          pc.add(this.add.image(tx, ty, key).setDisplaySize(cardW, cardH));
+        } else if (this.textures.exists(key)) {
+          pc.add(this.add.image(tx, ty, key).setDisplaySize(cardW, cardH).setTint(0x888888).setAlpha(0.4));
+          pc.add(this.add.text(tx, ty, '?', {
+            fontFamily: '"Baloo 2"', fontSize: `${Math.round(cardH * 0.38)}px`, color: '#FFFFFF', fontStyle: 'bold',
+          }).setOrigin(0.5).setAlpha(0.8));
+        } else {
+          pc.add(this.add.text(tx, ty, has ? p.result : '?', {
+            fontFamily: '"Baloo 2"', fontSize: `${Math.round(cardW * 0.16)}px`,
+            color: has ? '#5A2E94' : '#8A6BB8', fontStyle: 'bold', align: 'center', wordWrap: { width: cardW * 0.85 },
+          }).setOrigin(0.5).setAlpha(has ? 1 : 0.4));
+        }
+      });
+      pages.push(pc);
+    }
+
+    let page = 0;
+    const navCY = contentBottom + Math.round(navH * 0.5);
+    const navFont = Math.round(bookH * 0.07);
+    const dotR = Math.round(navH * 0.12), dotGap = Math.round(dotR * 3.2);
+    const dotStart = -((totalPages - 1) * dotGap) / 2;
+    const dotG = this.add.graphics(); book.add(dotG);
+    const drawDots = () => {
+      dotG.clear();
+      for (let d = 0; d < totalPages; d++) {
+        dotG.fillStyle(d === page ? 0x6B49A8 : 0x9A7DB8, d === page ? 1 : 0.35);
+        dotG.fillCircle(dotStart + d * dotGap, navCY, dotR);
+      }
+    };
+    drawDots();
+    const prevBtn = this.add.text(pageX + pad + navFont * 0.5, navCY, '‹', {
+      fontFamily: '"Baloo 2"', fontSize: `${navFont}px`, color: '#6B49A8', fontStyle: 'bold',
+    }).setOrigin(0.5).setVisible(false).setInteractive();
+    const nextBtn = this.add.text(pageX + pageW - pad - navFont * 0.5, navCY, '›', {
+      fontFamily: '"Baloo 2"', fontSize: `${navFont}px`, color: '#6B49A8', fontStyle: 'bold',
+    }).setOrigin(0.5).setVisible(totalPages > 1).setInteractive();
+    book.add([prevBtn, nextBtn]);
+    const nav = (dir: number) => {
+      const np = page + dir;
+      if (np < 0 || np >= totalPages) return;
+      pages[page].setVisible(false); page = np; pages[page].setVisible(true);
+      drawDots();
+      prevBtn.setVisible(page > 0); nextBtn.setVisible(page < totalPages - 1);
+    };
+    prevBtn.on('pointerdown', () => nav(-1));
+    nextBtn.on('pointerdown', () => nav(1));
+
+    const close = () => {
+      this.tweens.add({ targets: layer, alpha: 0, duration: 200, onComplete: () => { layer.destroy(); this.collectionOpen = false; } });
+    };
+    dim.on('pointerdown', close);
+    closeG.setInteractive(new Phaser.Geom.Circle(closeX, closeY, closeR * 1.4), Phaser.Geom.Circle.Contains);
+    closeG.on('pointerdown', close);
+
+    book.setScale(0.85);
+    this.tweens.add({ targets: layer, alpha: 1, duration: 200 });
+    this.tweens.add({ targets: book, scaleX: 1, scaleY: 1, duration: 320, ease: 'Back.easeOut' });
+  }
 
   private showFinale() {
     const { gw: GW, gh: GH, cx: CX, cy: CY } = this;
